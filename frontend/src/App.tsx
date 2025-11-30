@@ -5,11 +5,9 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
 import FindPool from './pages/FindPool';
 import GroupDetail from './pages/GroupDetail';
 import Profile from './pages/Profile';
-import Home from './pages/Home';
 import RidePoolDashboard from './pages/RidePoolDashboard';
 import './App.css';
 

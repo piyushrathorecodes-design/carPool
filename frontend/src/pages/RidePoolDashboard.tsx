@@ -24,9 +24,6 @@ const RidePoolDashboard: React.FC = () => {
       // Fetch user groups
       const groupsResponse = await axios.get('/api/group/mygroups');
       
-      // Fetch user profile for stats
-      const profileResponse = await axios.get('/api/auth/me');
-      
       // Mock stats data (in a real app, this would come from the backend)
       setStats({
         totalGroups: groupsResponse.data.data.length,

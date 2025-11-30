@@ -91,8 +91,7 @@ const FindPool: React.FC = () => {
       setLoading(true);
       
       // First create a pool request
-      const poolResponse = await axios.post('/api/pool/create', searchData);
-      const poolRequestId = poolResponse.data.data._id;
+      await axios.post('/api/pool/create', searchData);
       
       // Then create a group with this pool request
       const groupResponse = await axios.post('/api/group/create', {

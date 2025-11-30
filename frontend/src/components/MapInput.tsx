@@ -9,7 +9,6 @@ interface MapInputProps {
 const MapInput: React.FC<MapInputProps> = ({ onLocationSelect, placeholder, defaultValue = '' }) => {
   const [address, setAddress] = useState(defaultValue);
   const [showMap, setShowMap] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);

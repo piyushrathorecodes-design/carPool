@@ -113,7 +113,7 @@ const GroupMap: React.FC<GroupMapProps> = ({ groupId }) => {
             src={mapData.url} 
             alt="Group locations map" 
             className="w-full h-96 object-cover"
-            onError={(e) => {
+            onError={() => {
               setError('Failed to load map image');
               console.error('Map image failed to load');
             }}
