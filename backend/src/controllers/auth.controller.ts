@@ -26,6 +26,15 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
+    
+    // Validate educational institution email domains
+    if (!email.endsWith('.edu.in') && !email.endsWith('.ac.in')) {
+      res.status(400).json({
+        success: false,
+        message: 'Please use a valid educational email (.edu.in or .ac.in)'
+      });
+      return;
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
