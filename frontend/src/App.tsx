@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Navbar from './components/Navbar';
@@ -76,12 +76,12 @@ function App() {
                         Welcome to the future of campus transportation
                       </p>
                       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <a href="/login" className="ridepool-btn ridepool-btn-primary px-6 py-3 rounded-lg font-semibold hover-lift">
+                        <Link to="/login" className="ridepool-btn ridepool-btn-primary px-6 py-3 rounded-lg font-semibold hover-lift">
                           Get Started
-                        </a>
-                        <a href="/register" className="ridepool-btn ridepool-btn-secondary px-6 py-3 rounded-lg font-semibold hover-lift">
+                        </Link>
+                        <Link to="/register" className="ridepool-btn ridepool-btn-secondary px-6 py-3 rounded-lg font-semibold hover-lift">
                           Sign Up
-                        </a>
+                        </Link>
                       </div>
                     </div>
                   </div>
