@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import io from 'socket.io-client';
+import axios from 'axios';
+import LocationTracker from '../components/LocationTracker';
+import GroupMap from '../components/GroupMap';
 
 let socket: any;
 
@@ -14,33 +17,75 @@ const GroupDetail: React.FC = () => {
   const [showFareCalculator, setShowFareCalculator] = useState(false);
 
   useEffect(() => {
-    // In a real app, you would fetch this data from your API
-    // For now, we'll use mock data
-    setTimeout(() => {
-      setGroup({
-        id: id,
-        name: 'Main Gate to Academic Block',
-        members: [
-          { id: 1, name: 'You', role: 'admin' },
-          { id: 2, name: 'Rahul Sharma', role: 'member' },
-          { id: 3, name: 'Priya Patel', role: 'member' }
-        ],
-        route: {
-          pickup: 'Main Gate',
-          drop: 'Academic Block'
-        },
-        status: 'Open',
-        seatCount: 4
-      });
-      
-      setMessages([
-        { id: 1, user: 'Rahul Sharma', content: 'Hi everyone! Looking forward to our ride tomorrow.', time: '10:30 AM' },
-        { id: 2, user: 'You', content: 'Same here! What time are we meeting at the gate?', time: '10:32 AM' },
-        { id: 3, user: 'Priya Patel', content: 'Let\'s meet at 8:15 AM sharp.', time: '10:35 AM' }
-      ]);
-      
-      setLoading(false);
-    }, 1000);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch group data
+        const groupResponse = await axios.get(`/api/group/${id}`);
+        
+        // Transform group data to match UI structure
+        const transformedGroup = {
+          id: groupResponse.data.data._id,
+          name: `${groupResponse.data.data.route.pickup.address} to ${groupResponse.data.data.route.drop.address}`,
+          members: groupResponse.data.data.members.map((member: any, index: number) => ({
+            id: member._id,
+            name: member.name,
+            role: index === 0 ? 'admin' : 'member' // First member is admin
+          })),
+          route: {
+            pickup: groupResponse.data.data.route.pickup.address,
+            drop: groupResponse.data.data.route.drop.address
+          },
+          status: groupResponse.data.data.status,
+          seatCount: groupResponse.data.data.seatCount
+        };
+        
+        setGroup(transformedGroup);
+        
+        // Fetch chat messages for this group
+        const messagesResponse = await axios.get(`/api/chat/history/${id}`);
+        
+        // Transform messages to match UI structure
+        const transformedMessages = messagesResponse.data.data.map((message: any) => ({
+          id: message._id,
+          user: message.sender.name,
+          content: message.content,
+          time: new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }));
+        
+        setMessages(transformedMessages);
+      } catch (err) {
+        console.error('Error fetching group data:', err);
+        
+        // Fallback to mock data on error
+        setGroup({
+          id: id,
+          name: 'Main Gate to Academic Block',
+          members: [
+            { id: 1, name: 'You', role: 'admin' },
+            { id: 2, name: 'Rahul Sharma', role: 'member' },
+            { id: 3, name: 'Priya Patel', role: 'member' }
+          ],
+          route: {
+            pickup: 'Main Gate',
+            drop: 'Academic Block'
+          },
+          status: 'Open',
+          seatCount: 4
+        });
+        
+        setMessages([
+          { id: 1, user: 'Rahul Sharma', content: 'Hi everyone! Looking forward to our ride tomorrow.', time: '10:30 AM' },
+          { id: 2, user: 'You', content: 'Same here! What time are we meeting at the gate?', time: '10:32 AM' },
+          { id: 3, user: 'Priya Patel', content: 'Let\'s meet at 8:15 AM sharp.', time: '10:35 AM' }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
     
     // Initialize socket connection
     socket = io('http://localhost:5000');
@@ -180,6 +225,9 @@ const GroupDetail: React.FC = () => {
               </div>
             </div>
             
+            {/* Location Tracking */}
+            <LocationTracker />
+            
             {/* Actions */}
             <div className="bg-white shadow overflow-hidden sm:rounded-lg">
               <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
@@ -268,9 +316,11 @@ const GroupDetail: React.FC = () => {
             )}
           </div>
           
-          {/* Chat */}
-          <div className="lg:col-span-2">
-            <div className="bg-white shadow overflow-hidden sm:rounded-lg flex flex-col h-[calc(100vh-200px)]">
+          {/* Map and Chat */}
+          <div className="lg:col-span-2 space-y-6">
+            <GroupMap groupId={id || ''} />
+            
+            <div className="bg-white shadow overflow-hidden sm:rounded-lg flex flex-col h-[calc(100vh-400px)]">
               <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
                 <h3 className="text-lg leading-6 font-medium text-gray-900">Group Chat</h3>
               </div>

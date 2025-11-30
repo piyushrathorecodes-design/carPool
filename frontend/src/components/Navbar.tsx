@@ -40,21 +40,20 @@ const Navbar: React.FC = () => {
                   </Link>
                 )}
                 
-                <div className="relative group">
-                  <button className="flex items-center text-sm rounded-full focus:outline-none">
-                    <span className="mr-2">{user?.name}</span>
+                {/* User profile section with visible logout button */}
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center">
                     <svg className="h-6 w-6 rounded-full bg-gray-200 text-gray-800" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
-                  </button>
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden group-hover:block z-50">
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Sign out
-                    </button>
+                    <span className="ml-2 text-sm font-medium">{user?.name}</span>
                   </div>
+                  <button
+                    onClick={handleLogout}
+                    className="px-3 py-2 rounded-md text-sm font-medium bg-red-500 hover:bg-red-600 text-white"
+                  >
+                    Logout
+                  </button>
                 </div>
               </>
             ) : (

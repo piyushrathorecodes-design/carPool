@@ -9,6 +9,15 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, password, phone, gender, year, branch } = req.body;
 
+    // Validate required fields
+    if (!name || !email || !password || !phone || !gender || !year || !branch) {
+      res.status(400).json({
+        success: false,
+        message: 'All fields are required'
+      });
+      return;
+    }
+
     // Validate email format
     if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       res.status(400).json({

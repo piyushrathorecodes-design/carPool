@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -9,49 +10,91 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, you would fetch this data from your API
-    // For now, we'll use mock data
-    setTimeout(() => {
-      setUpcomingPools([
-        {
-          id: 1,
-          pickup: 'Hostel Block A',
-          drop: 'Main Gate',
-          date: '2023-06-15',
-          time: '08:30 AM',
-          members: 3,
-          status: 'Confirmed'
-        },
-        {
-          id: 2,
-          pickup: 'Girls Hostel',
-          drop: 'Academic Block',
-          date: '2023-06-16',
-          time: '02:00 PM',
-          members: 2,
-          status: 'Pending'
-        }
-      ]);
-      
-      setNotifications([
-        {
-          id: 1,
-          title: 'New match found!',
-          content: 'We found 2 students matching your route to Main Gate.',
-          time: '2 hours ago',
-          read: false
-        },
-        {
-          id: 2,
-          title: 'Group confirmed',
-          content: 'Your cab pool for tomorrow is confirmed.',
-          time: '1 day ago',
-          read: true
-        }
-      ]);
-      
-      setLoading(false);
-    }, 1000);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch upcoming pools
+        const poolsResponse = await axios.get('/api/pool/requests');
+        
+        // Transform pool data to match UI structure
+        const transformedPools = poolsResponse.data.data.map((pool: any) => ({
+          id: pool._id,
+          pickup: pool.pickupLocation.address,
+          drop: pool.dropLocation.address,
+          date: new Date(pool.dateTime).toLocaleDateString(),
+          time: new Date(pool.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          members: pool.matchedUsers ? pool.matchedUsers.length + 1 : 1,
+          status: pool.status
+        }));
+        
+        setUpcomingPools(transformedPools);
+        
+        // Fetch notifications
+        // For now, we'll use mock notifications since we don't have a notification API yet
+        setNotifications([
+          {
+            id: 1,
+            title: 'New match found!',
+            content: 'We found students matching your route.',
+            time: '2 hours ago',
+            read: false
+          },
+          {
+            id: 2,
+            title: 'Group update',
+            content: 'Your cab pool details have been updated.',
+            time: '1 day ago',
+            read: true
+          }
+        ]);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        
+        // Fallback to mock data on error
+        setUpcomingPools([
+          {
+            id: 1,
+            pickup: 'Hostel Block A',
+            drop: 'Main Gate',
+            date: '2023-06-15',
+            time: '08:30 AM',
+            members: 3,
+            status: 'Confirmed'
+          },
+          {
+            id: 2,
+            pickup: 'Girls Hostel',
+            drop: 'Academic Block',
+            date: '2023-06-16',
+            time: '02:00 PM',
+            members: 2,
+            status: 'Pending'
+          }
+        ]);
+        
+        setNotifications([
+          {
+            id: 1,
+            title: 'New match found!',
+            content: 'We found 2 students matching your route to Main Gate.',
+            time: '2 hours ago',
+            read: false
+          },
+          {
+            id: 2,
+            title: 'Group confirmed',
+            content: 'Your cab pool for tomorrow is confirmed.',
+            time: '1 day ago',
+            read: true
+          }
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
   }, []);
 
   return (

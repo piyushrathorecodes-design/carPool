@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
+import MapInput from '../components/MapInput';
 
 const FindPool: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +11,9 @@ const FindPool: React.FC = () => {
     time: '',
     gender: 'Any'
   });
+  
+  const [pickupCoordinates, setPickupCoordinates] = useState<[number, number]>([0, 0]);
+  const [dropCoordinates, setDropCoordinates] = useState<[number, number]>([0, 0]);
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -27,73 +32,50 @@ const FindPool: React.FC = () => {
       setLoading(true);
       setSearched(true);
       
-      // In a real app, you would send this data to your API
-      // const response = await api.findPoolMatches(formData);
-      
-      // Simulate API call with mock data
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setMatches([
-        {
-          id: 1,
-          user: {
-            name: 'Rahul Sharma',
-            year: '3rd Year',
-            branch: 'Computer Science'
-          },
-          matchScore: 92,
-          distanceSimilarity: {
-            pickup: 1200,
-            drop: 2500
-          },
-          timeSimilarity: 5,
-          route: {
-            pickup: 'Hostel Block A',
-            drop: 'Main Gate'
-          },
-          dateTime: '2023-06-15 08:30 AM'
+      // Prepare data for API call
+      const requestData = {
+        pickupLocation: {
+          address: formData.pickup,
+          coordinates: pickupCoordinates
         },
-        {
-          id: 2,
-          user: {
-            name: 'Priya Patel',
-            year: '2nd Year',
-            branch: 'Electronics'
-          },
-          matchScore: 87,
-          distanceSimilarity: {
-            pickup: 800,
-            drop: 3200
-          },
-          timeSimilarity: 12,
-          route: {
-            pickup: 'Girls Hostel',
-            drop: 'Academic Block'
-          },
-          dateTime: '2023-06-15 08:45 AM'
+        dropLocation: {
+          address: formData.drop,
+          coordinates: dropCoordinates
         },
-        {
-          id: 3,
-          user: {
-            name: 'Amit Kumar',
-            year: '4th Year',
-            branch: 'Mechanical'
-          },
-          matchScore: 78,
-          distanceSimilarity: {
-            pickup: 2100,
-            drop: 1800
-          },
-          timeSimilarity: 8,
-          route: {
-            pickup: 'Boys Hostel',
-            drop: 'Library'
-          },
-          dateTime: '2023-06-15 08:20 AM'
-        }
-      ]);
-    } catch (err) {
+        dateTime: `${formData.date}T${formData.time}:00.000Z`,
+        preferredGender: formData.gender
+      };
+      
+      // Call the real API
+      const response = await axios.post('/api/pool/match', requestData);
+      
+      // Transform API response to match our UI structure
+      const transformedMatches = response.data.data.map((match: any) => ({
+        id: match._id,
+        user: {
+          name: match.createdBy.name,
+          // Note: We'll need to get year and branch from user profile
+          year: 'N/A',
+          branch: 'N/A'
+        },
+        matchScore: Math.round(match.matchScore),
+        distanceSimilarity: {
+          pickup: match.distanceSimilarity.pickup,
+          drop: match.distanceSimilarity.drop
+        },
+        timeSimilarity: Math.round(match.timeDifference),
+        route: {
+          pickup: match.pickupLocation.address,
+          drop: match.dropLocation.address
+        },
+        dateTime: new Date(match.dateTime).toLocaleString()
+      }));
+      
+      setMatches(transformedMatches);
+    } catch (err: any) {
       console.error('Error finding pool matches:', err);
+      // Show error message to user
+      setMatches([]);
     } finally {
       setLoading(false);
     }
@@ -121,14 +103,11 @@ const FindPool: React.FC = () => {
                       <label htmlFor="pickup" className="block text-sm font-medium text-gray-700">
                         Pickup Location
                       </label>
-                      <input
-                        type="text"
-                        name="pickup"
-                        id="pickup"
-                        required
-                        value={formData.pickup}
-                        onChange={handleChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      <MapInput
+                        onLocationSelect={(location) => {
+                          setFormData({ ...formData, pickup: location.address });
+                          setPickupCoordinates(location.coordinates);
+                        }}
                         placeholder="Enter pickup location"
                       />
                     </div>
@@ -137,14 +116,11 @@ const FindPool: React.FC = () => {
                       <label htmlFor="drop" className="block text-sm font-medium text-gray-700">
                         Drop Location
                       </label>
-                      <input
-                        type="text"
-                        name="drop"
-                        id="drop"
-                        required
-                        value={formData.drop}
-                        onChange={handleChange}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      <MapInput
+                        onLocationSelect={(location) => {
+                          setFormData({ ...formData, drop: location.address });
+                          setDropCoordinates(location.coordinates);
+                        }}
                         placeholder="Enter drop location"
                       />
                     </div>

@@ -5,6 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import http from 'http';
 import { Server } from 'socket.io';
+import config from './config';
 
 // Load environment variables
 dotenv.config();
@@ -16,6 +17,7 @@ import poolRoutes from './routes/pool.routes';
 import groupRoutes from './routes/group.routes';
 import adminRoutes from './routes/admin.routes';
 import chatRoutes from './routes/chat.routes';
+import locationRoutes from './routes/location.routes';
 
 // Initialize app
 const app = express();
@@ -34,11 +36,7 @@ const io = new Server(server, {
 app.use(helmet());
 
 // CORS configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-}));
+app.use(cors(config.security.cors));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -47,7 +45,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // MongoDB connection
 const connectDB = async (): Promise<void> => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/campus_cab_pool');
+    await mongoose.connect(config.mongodb.uri);
     console.log('✅ Connected to MongoDB');
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
@@ -65,6 +63,7 @@ app.use('/api/pool', poolRoutes);
 app.use('/api/group', groupRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/location', locationRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req: Request, res: Response) => {
@@ -208,7 +207,7 @@ process.on('SIGTERM', () => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = config.server.port;
 
 server.listen(PORT, () => {
   console.log(`

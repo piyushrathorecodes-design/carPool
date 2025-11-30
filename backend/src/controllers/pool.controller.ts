@@ -162,6 +162,15 @@ export const matchPoolRequests = async (req: any, res: Response): Promise<void> 
   try {
     const { pickupLocation, dropLocation, dateTime, preferredGender } = req.body;
     
+    // Validate required fields
+    if (!pickupLocation || !dropLocation || !dateTime) {
+      res.status(400).json({
+        success: false,
+        message: 'Pickup location, drop location, and date time are required'
+      });
+      return;
+    }
+    
     // Convert dateTime to Date object if it's a string
     const requestDateTime = new Date(dateTime);
     
@@ -170,7 +179,7 @@ export const matchPoolRequests = async (req: any, res: Response): Promise<void> 
     const startTime = new Date(requestDateTime.getTime() - timeRange);
     const endTime = new Date(requestDateTime.getTime() + timeRange);
     
-    // Find matching pool requests
+    // Find matching pool requests with geospatial queries
     const matchingRequests = await PoolRequest.find({
       status: 'Open',
       createdBy: { $ne: req.user.id }, // Exclude own requests
@@ -185,8 +194,61 @@ export const matchPoolRequests = async (req: any, res: Response): Promise<void> 
       ]
     }).populate('createdBy', 'name email liveLocation');
     
-    // ... rest of your code
+    // Calculate match scores for each request
+    const scoredMatches = matchingRequests.map(request => {
+      // Calculate distance similarity (lower distance = higher score)
+      const pickupDistance = calculateDistance(
+        pickupLocation.coordinates[1], // lat1
+        pickupLocation.coordinates[0], // lon1
+        request.pickupLocation.coordinates[1], // lat2
+        request.pickupLocation.coordinates[0] // lon2
+      );
+      
+      const dropDistance = calculateDistance(
+        dropLocation.coordinates[1], // lat1
+        dropLocation.coordinates[0], // lon1
+        request.dropLocation.coordinates[1], // lat2
+        request.dropLocation.coordinates[0] // lon2
+      );
+      
+      // Time difference in minutes
+      const timeDiff = Math.abs(request.dateTime.getTime() - requestDateTime.getTime()) / (1000 * 60);
+      
+      // Calculate match score (0-100)
+      // Distance factor (40% weight): closer locations get higher scores
+      const distanceScore = Math.max(0, 40 - (pickupDistance + dropDistance) / 1000);
+      
+      // Time factor (40% weight): closer times get higher scores
+      const timeScore = Math.max(0, 40 - timeDiff / 2);
+      
+      // Gender preference factor (20% weight)
+      const genderScore = preferredGender === request.preferredGender || 
+                         request.preferredGender === 'Any' || 
+                         !request.preferredGender ? 20 : 0;
+      
+      const matchScore = Math.min(100, distanceScore + timeScore + genderScore);
+      
+      return {
+        ...request.toObject(),
+        matchScore,
+        distanceSimilarity: {
+          pickup: pickupDistance,
+          drop: dropDistance
+        },
+        timeDifference: timeDiff
+      };
+    });
+    
+    // Sort by match score descending
+    scoredMatches.sort((a, b) => b.matchScore - a.matchScore);
+    
+    res.status(200).json({
+      success: true,
+      count: scoredMatches.length,
+      data: scoredMatches
+    });
   } catch (err: any) {
+    console.error('Match pool requests error:', err);
     res.status(500).json({
       success: false,
       message: err.message || 'Server Error'

@@ -29,6 +29,13 @@ const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate all fields are filled
+    if (!formData.name || !formData.email || !formData.password || !formData.phone || 
+        !formData.gender || !formData.year || !formData.branch) {
+      setError('All fields are required');
+      return;
+    }
+    
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
@@ -38,6 +45,18 @@ const Register: React.FC = () => {
     // Validate email format
     if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       setError('Please enter a valid email');
+      return;
+    }
+    
+    // Validate password strength
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+    
+    // Validate phone number
+    if (!/^\d{10}$/.test(formData.phone)) {
+      setError('Please enter a valid 10-digit phone number');
       return;
     }
     
@@ -84,7 +103,7 @@ const Register: React.FC = () => {
           <div className="rounded-md shadow-sm space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Full Name
+                Full Name *
               </label>
               <input
                 id="name"
@@ -100,7 +119,7 @@ const Register: React.FC = () => {
             
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
+                Email *
               </label>
               <input
                 id="email"
@@ -117,7 +136,7 @@ const Register: React.FC = () => {
             
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                Phone Number
+                Phone Number *
               </label>
               <input
                 id="phone"
@@ -133,7 +152,7 @@ const Register: React.FC = () => {
             
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+                Password *
               </label>
               <input
                 id="password"
@@ -144,13 +163,13 @@ const Register: React.FC = () => {
                 value={formData.password}
                 onChange={handleChange}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Password"
+                placeholder="Password (min. 6 characters)"
               />
             </div>
             
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirm Password
+                Confirm Password *
               </label>
               <input
                 id="confirmPassword"
@@ -168,16 +187,17 @@ const Register: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
-                  Gender
+                  Gender *
                 </label>
                 <select
                   id="gender"
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
+                  required
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 >
-                  <option value="">Select</option>
+                  <option value="">Select Gender</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
@@ -186,32 +206,34 @@ const Register: React.FC = () => {
               
               <div>
                 <label htmlFor="year" className="block text-sm font-medium text-gray-700">
-                  Year
+                  Year *
                 </label>
                 <input
                   id="year"
                   name="year"
                   type="text"
+                  required
                   value={formData.year}
                   onChange={handleChange}
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Year"
+                  placeholder="Year (e.g., 1st, 2nd, 3rd, 4th)"
                 />
               </div>
             </div>
             
             <div>
               <label htmlFor="branch" className="block text-sm font-medium text-gray-700">
-                Branch
+                Branch *
               </label>
               <input
                 id="branch"
                 name="branch"
                 type="text"
+                required
                 value={formData.branch}
                 onChange={handleChange}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Branch"
+                placeholder="Branch (e.g., Computer Science, Electronics)"
               />
             </div>
           </div>
