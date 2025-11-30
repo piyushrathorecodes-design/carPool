@@ -41,6 +41,9 @@ export const productionConfig = {
     googleMaps: {
       apiKey: process.env.GOOGLE_MAPS_API_KEY || ''
     },
+    geoapify: {
+      apiKey: process.env.GEOAPIFY_API_KEY || ''
+    },
     email: {
       service: process.env.EMAIL_SERVICE || 'gmail',
       username: process.env.EMAIL_USERNAME || '',

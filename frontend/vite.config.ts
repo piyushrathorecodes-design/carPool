@@ -14,6 +14,12 @@ export default defineConfig({
         target: 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
+      },
+      '/geoapify': {
+        target: 'https://api.geoapify.com',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/geoapify/, ''),
       }
     }
   }

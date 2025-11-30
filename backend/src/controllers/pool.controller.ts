@@ -1,7 +1,9 @@
+// backend/src/controllers/pool.controller.ts
 import { Request, Response } from 'express';
 import PoolRequest from '../models/PoolRequest.model';
 import User from '../models/User.model';
 import { Types } from 'mongoose';
+import { calculateDistanceHaversine } from '../utils/geoapify.utils';
 
 // @desc    Create a pool request
 // @route   POST /api/pool/create
@@ -26,16 +28,16 @@ export const createPoolRequest = async (req: any, res: Response): Promise<void> 
       return;
     }
 
-   const poolRequest = await PoolRequest.create({
-  createdBy: req.user.id,
-  pickupLocation,
-  dropLocation,
-  dateTime,
-  preferredGender: preferredGender || 'Any',
-  seatsNeeded: seatsNeeded || 1,
-  mode: mode || 'One-time',
-  status: 'Open' // Add this
-});
+    const poolRequest = await PoolRequest.create({
+      createdBy: req.user.id,
+      pickupLocation,
+      dropLocation,
+      dateTime,
+      preferredGender: preferredGender || 'Any',
+      seatsNeeded: seatsNeeded || 1,
+      mode: mode || 'Scheduled',
+      status: 'Open'
+    });
 
     res.status(201).json({
       success: true,
@@ -49,10 +51,47 @@ export const createPoolRequest = async (req: any, res: Response): Promise<void> 
   }
 };
 
-// @desc    Get pool requests
+// @desc    Get all pool requests (for current user or all if admin)
 // @route   GET /api/pool/requests
 // @access  Private
-export const getPoolRequests = async (req: Request, res: Response): Promise<void> => {
+export const getAllPoolRequests = async (req: any, res: Response): Promise<void> => {
+  try {
+    // Build query based on user role
+    let query: any = {};
+    
+    // If not admin, only show user's own requests or open requests
+    if (req.user.role !== 'admin') {
+      query = {
+        $or: [
+          { createdBy: req.user.id },
+          { status: 'Open' }
+        ]
+      };
+    }
+
+    const poolRequests = await PoolRequest.find(query)
+      .populate('createdBy', 'name email gender year branch')
+      .populate('matchedUsers', 'name email')
+      .sort({ dateTime: 1 }) // Sort by date ascending (upcoming first)
+      .limit(50); // Limit to 50 results
+    
+    res.status(200).json({
+      success: true,
+      count: poolRequests.length,
+      data: poolRequests
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: err.message || 'Server Error'
+    });
+  }
+};
+
+// @desc    Get a single pool request by ID
+// @route   GET /api/pool/:id
+// @access  Private
+export const getPoolRequest = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     
@@ -66,8 +105,8 @@ export const getPoolRequests = async (req: Request, res: Response): Promise<void
     }
 
     const poolRequest = await PoolRequest.findById(id)
-      .populate('createdBy', 'name email')
-      .populate('matchedUsers', 'name email');
+      .populate('createdBy', 'name email gender year branch phone')
+      .populate('matchedUsers', 'name email gender year branch phone');
     
     if (!poolRequest) {
       res.status(404).json({
@@ -89,26 +128,20 @@ export const getPoolRequests = async (req: Request, res: Response): Promise<void
   }
 };
 
-// @desc    Get a single pool request
-// @route   GET /api/pool/:id
+// @desc    Get current user's pool requests
+// @route   GET /api/pool/my-requests
 // @access  Private
-export const getPoolRequest = async (req: Request, res: Response): Promise<void> => {
+export const getMyPoolRequests = async (req: any, res: Response): Promise<void> => {
   try {
-    const poolRequest = await PoolRequest.findById(req.params.id)
+    const poolRequests = await PoolRequest.find({ createdBy: req.user.id })
       .populate('createdBy', 'name email')
-      .populate('matchedUsers', 'name email');
-    
-    if (!poolRequest) {
-      res.status(404).json({
-        success: false,
-        message: 'Pool request not found'
-      });
-      return;
-    }
+      .populate('matchedUsers', 'name email')
+      .sort({ dateTime: -1 });
     
     res.status(200).json({
       success: true,
-      data: poolRequest
+      count: poolRequests.length,
+      data: poolRequests
     });
   } catch (err: any) {
     res.status(500).json({
@@ -133,7 +166,7 @@ export const deletePoolRequest = async (req: any, res: Response): Promise<void> 
       return;
     }
     
-    // Check if user is the owner
+    // Check if user is the owner or admin
     if (poolRequest.createdBy.toString() !== req.user.id && req.user.role !== 'admin') {
       res.status(403).json({
         success: false,
@@ -141,11 +174,61 @@ export const deletePoolRequest = async (req: any, res: Response): Promise<void> 
       });
       return;
     }
+    
     await poolRequest.deleteOne();
     
     res.status(200).json({
       success: true,
       data: {}
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: err.message || 'Server Error'
+    });
+  }
+};
+
+// @desc    Update pool request status
+// @route   PATCH /api/pool/:id/status
+// @access  Private
+export const updatePoolStatus = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { status } = req.body;
+    
+    if (!['Open', 'Matched', 'Completed', 'Cancelled'].includes(status)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid status'
+      });
+      return;
+    }
+
+    const poolRequest = await PoolRequest.findById(req.params.id);
+    
+    if (!poolRequest) {
+      res.status(404).json({
+        success: false,
+        message: 'Pool request not found'
+      });
+      return;
+    }
+    
+    // Check if user is the owner
+    if (poolRequest.createdBy.toString() !== req.user.id) {
+      res.status(403).json({
+        success: false,
+        message: 'Not authorized to update this pool request'
+      });
+      return;
+    }
+
+    poolRequest.status = status;
+    await poolRequest.save();
+    
+    res.status(200).json({
+      success: true,
+      data: poolRequest
     });
   } catch (err: any) {
     res.status(500).json({
@@ -192,19 +275,19 @@ export const matchPoolRequests = async (req: any, res: Response): Promise<void> 
         { preferredGender: preferredGender },
         { preferredGender: { $exists: false } }
       ]
-    }).populate('createdBy', 'name email liveLocation');
+    }).populate('createdBy', 'name email gender year branch phone');
     
     // Calculate match scores for each request
     const scoredMatches = matchingRequests.map(request => {
       // Calculate distance similarity (lower distance = higher score)
-      const pickupDistance = calculateDistance(
+      const pickupDistance = calculateDistanceHaversine(
         pickupLocation.coordinates[1], // lat1
         pickupLocation.coordinates[0], // lon1
         request.pickupLocation.coordinates[1], // lat2
         request.pickupLocation.coordinates[0] // lon2
       );
       
-      const dropDistance = calculateDistance(
+      const dropDistance = calculateDistanceHaversine(
         dropLocation.coordinates[1], // lat1
         dropLocation.coordinates[0], // lon1
         request.dropLocation.coordinates[1], // lat2
@@ -239,13 +322,15 @@ export const matchPoolRequests = async (req: any, res: Response): Promise<void> 
       };
     });
     
-    // Sort by match score descending
-    scoredMatches.sort((a, b) => b.matchScore - a.matchScore);
+    // Sort by match score descending and filter out low matches
+    const filteredMatches = scoredMatches
+      .filter(match => match.matchScore >= 30) // Only show matches with score >= 30
+      .sort((a, b) => b.matchScore - a.matchScore);
     
     res.status(200).json({
       success: true,
-      count: scoredMatches.length,
-      data: scoredMatches
+      count: filteredMatches.length,
+      data: filteredMatches
     });
   } catch (err: any) {
     console.error('Match pool requests error:', err);

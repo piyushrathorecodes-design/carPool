@@ -76,15 +76,15 @@ const Profile: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 py-8">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-          <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+        <div className="ridepool-card">
+          <div className="px-4 py-5 sm:px-6 border-b border-gray-700">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">My Profile</h3>
+              <h3 className="text-lg leading-6 font-medium text-white">My Profile</h3>
               <button
                 onClick={() => setEditing(!editing)}
-                className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="ridepool-btn ridepool-btn-primary inline-flex items-center px-3 py-1 rounded-md text-sm font-medium"
               >
                 {editing ? 'Cancel' : 'Edit'}
               </button>
@@ -92,7 +92,7 @@ const Profile: React.FC = () => {
           </div>
           
           {success && (
-            <div className="bg-green-50 border-l-4 border-green-400 p-4">
+            <div className="bg-green-500 bg-opacity-20 border-l-4 border-green-500 p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -100,7 +100,7 @@ const Profile: React.FC = () => {
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-green-700">
+                  <p className="text-sm text-green-300">
                     {success}
                   </p>
                 </div>
@@ -109,7 +109,7 @@ const Profile: React.FC = () => {
           )}
           
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-400 p-4">
+            <div className="bg-red-500 bg-opacity-20 border-l-4 border-red-500 p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -117,7 +117,7 @@ const Profile: React.FC = () => {
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-red-700">
+                  <p className="text-sm text-red-300">
                     {error}
                   </p>
                 </div>
@@ -125,14 +125,11 @@ const Profile: React.FC = () => {
             </div>
           )}
           
-          <div className="border-t border-gray-200">
+          <div className="border-t border-gray-700">
             {loading ? (
               <div className="px-4 py-5 sm:p-6">
                 <div className="flex justify-center">
-                  <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
+                  <div className="animate-pulse-glow w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-blue-500"></div>
                 </div>
               </div>
             ) : (
@@ -140,7 +137,7 @@ const Profile: React.FC = () => {
                 <div className="px-4 py-5 sm:p-6">
                   <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                     <div className="sm:col-span-3">
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-300">
                         Full Name
                       </label>
                       {editing ? (
@@ -150,22 +147,22 @@ const Profile: React.FC = () => {
                           id="name"
                           value={profile.name}
                           onChange={handleChange}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="ridepool-input mt-1 block w-full rounded-md py-2 px-3 focus:z-10 sm:text-sm"
                         />
                       ) : (
-                        <p className="mt-1 text-sm text-gray-900">{profile.name}</p>
+                        <p className="mt-1 text-sm text-white">{profile.name}</p>
                       )}
                     </div>
                     
                     <div className="sm:col-span-3">
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-300">
                         Email Address
                       </label>
-                      <p className="mt-1 text-sm text-gray-900">{profile.email}</p>
+                      <p className="mt-1 text-sm text-white">{profile.email}</p>
                     </div>
                     
                     <div className="sm:col-span-3">
-                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="phone" className="block text-sm font-medium text-gray-300">
                         Phone Number
                       </label>
                       {editing ? (
@@ -175,15 +172,15 @@ const Profile: React.FC = () => {
                           id="phone"
                           value={profile.phone}
                           onChange={handleChange}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="ridepool-input mt-1 block w-full rounded-md py-2 px-3 focus:z-10 sm:text-sm"
                         />
                       ) : (
-                        <p className="mt-1 text-sm text-gray-900">{profile.phone}</p>
+                        <p className="mt-1 text-sm text-white">{profile.phone}</p>
                       )}
                     </div>
                     
                     <div className="sm:col-span-3">
-                      <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="gender" className="block text-sm font-medium text-gray-300">
                         Gender
                       </label>
                       {editing ? (
@@ -192,7 +189,7 @@ const Profile: React.FC = () => {
                           name="gender"
                           value={profile.gender}
                           onChange={handleChange}
-                          className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="ridepool-input mt-1 block w-full rounded-md py-2 px-3 focus:z-10 sm:text-sm"
                         >
                           <option value="">Select</option>
                           <option value="Male">Male</option>
@@ -200,12 +197,12 @@ const Profile: React.FC = () => {
                           <option value="Other">Other</option>
                         </select>
                       ) : (
-                        <p className="mt-1 text-sm text-gray-900">{profile.gender}</p>
+                        <p className="mt-1 text-sm text-white">{profile.gender}</p>
                       )}
                     </div>
                     
                     <div className="sm:col-span-3">
-                      <label htmlFor="year" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="year" className="block text-sm font-medium text-gray-300">
                         Year
                       </label>
                       {editing ? (
@@ -215,15 +212,15 @@ const Profile: React.FC = () => {
                           id="year"
                           value={profile.year}
                           onChange={handleChange}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="ridepool-input mt-1 block w-full rounded-md py-2 px-3 focus:z-10 sm:text-sm"
                         />
                       ) : (
-                        <p className="mt-1 text-sm text-gray-900">{profile.year}</p>
+                        <p className="mt-1 text-sm text-white">{profile.year}</p>
                       )}
                     </div>
                     
                     <div className="sm:col-span-3">
-                      <label htmlFor="branch" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="branch" className="block text-sm font-medium text-gray-300">
                         Branch
                       </label>
                       {editing ? (
@@ -233,15 +230,15 @@ const Profile: React.FC = () => {
                           id="branch"
                           value={profile.branch}
                           onChange={handleChange}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="ridepool-input mt-1 block w-full rounded-md py-2 px-3 focus:z-10 sm:text-sm"
                         />
                       ) : (
-                        <p className="mt-1 text-sm text-gray-900">{profile.branch}</p>
+                        <p className="mt-1 text-sm text-white">{profile.branch}</p>
                       )}
                     </div>
                     
                     <div className="sm:col-span-3">
-                      <label htmlFor="preferredTime" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="preferredTime" className="block text-sm font-medium text-gray-300">
                         Preferred Time
                       </label>
                       {editing ? (
@@ -250,22 +247,22 @@ const Profile: React.FC = () => {
                           name="preferredTime"
                           value={profile.preferredTime}
                           onChange={handleChange}
-                          className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="ridepool-input mt-1 block w-full rounded-md py-2 px-3 focus:z-10 sm:text-sm"
                         >
                           <option value="Morning">Morning</option>
                           <option value="Evening">Evening</option>
                         </select>
                       ) : (
-                        <p className="mt-1 text-sm text-gray-900">{profile.preferredTime}</p>
+                        <p className="mt-1 text-sm text-white">{profile.preferredTime}</p>
                       )}
                     </div>
                     
                     <div className="sm:col-span-6">
                       <fieldset>
-                        <legend className="text-base font-medium text-gray-900">Frequent Route</legend>
+                        <legend className="text-base font-medium text-white">Frequent Route</legend>
                         <div className="mt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                           <div className="sm:col-span-3">
-                            <label htmlFor="frequentRoute.home" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="frequentRoute.home" className="block text-sm font-medium text-gray-300">
                               Home Address
                             </label>
                             {editing ? (
@@ -275,15 +272,15 @@ const Profile: React.FC = () => {
                                 id="frequentRoute.home"
                                 value={profile.frequentRoute.home}
                                 onChange={handleChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                className="ridepool-input mt-1 block w-full rounded-md py-2 px-3 focus:z-10 sm:text-sm"
                               />
                             ) : (
-                              <p className="mt-1 text-sm text-gray-900">{profile.frequentRoute.home}</p>
+                              <p className="mt-1 text-sm text-white">{profile.frequentRoute.home}</p>
                             )}
                           </div>
                           
                           <div className="sm:col-span-3">
-                            <label htmlFor="frequentRoute.college" className="block text-sm font-medium text-gray-700">
+                            <label htmlFor="frequentRoute.college" className="block text-sm font-medium text-gray-300">
                               College Address
                             </label>
                             {editing ? (
@@ -293,10 +290,10 @@ const Profile: React.FC = () => {
                                 id="frequentRoute.college"
                                 value={profile.frequentRoute.college}
                                 onChange={handleChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                className="ridepool-input mt-1 block w-full rounded-md py-2 px-3 focus:z-10 sm:text-sm"
                               />
                             ) : (
-                              <p className="mt-1 text-sm text-gray-900">{profile.frequentRoute.college}</p>
+                              <p className="mt-1 text-sm text-white">{profile.frequentRoute.college}</p>
                             )}
                           </div>
                         </div>
@@ -304,20 +301,20 @@ const Profile: React.FC = () => {
                     </div>
                     
                     <div className="sm:col-span-6">
-                      <label htmlFor="liveLocation" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="liveLocation" className="block text-sm font-medium text-gray-300">
                         Live Location
                       </label>
-                      <p className="mt-1 text-sm text-gray-900">{profile.liveLocation}</p>
+                      <p className="mt-1 text-sm text-white">{profile.liveLocation}</p>
                     </div>
                   </div>
                 </div>
                 
                 {editing && (
-                  <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
+                  <div className="px-4 py-3 bg-gray-800 bg-opacity-50 text-right sm:px-6 rounded-b-lg">
                     <button
                       type="submit"
                       disabled={saving}
-                      className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                      className="ridepool-btn ridepool-btn-primary inline-flex justify-center py-2 px-4 rounded-md text-sm font-medium disabled:opacity-50"
                     >
                       {saving ? (
                         <>

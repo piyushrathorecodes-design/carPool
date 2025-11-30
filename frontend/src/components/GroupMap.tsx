@@ -1,11 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-
-interface Window {
-  google: any;
-}
-
-declare const google: any;
 
 interface GroupMapProps {
   groupId: string;
@@ -25,74 +18,34 @@ const GroupMap: React.FC<GroupMapProps> = ({ groupId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
+  const [mapData, setMapData] = useState<any>(null);
 
-  // Load Google Maps script
+  // Load group members and create map
   useEffect(() => {
-    if (!window.google) {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=geometry`;
-      script.async = true;
-      script.onload = initMap;
-      document.head.appendChild(script);
-    } else {
-      initMap();
-    }
-
-    return () => {
-      // Cleanup markers
-      markersRef.current.forEach(marker => marker.setMap(null));
-      markersRef.current = [];
-    };
+    loadGroupMembers();
   }, []);
-
-  const initMap = () => {
-    if (window.google && mapRef.current) {
-      // Initialize map centered on Delhi
-      const delhiCenter = { lat: 28.6139, lng: 77.2090 };
-      mapInstanceRef.current = new google.maps.Map(mapRef.current, {
-        zoom: 12,
-        center: delhiCenter,
-      });
-      
-      // Load group members
-      loadGroupMembers();
-    }
-  };
 
   const loadGroupMembers = async () => {
     try {
       setLoading(true);
       
-      // In a real app, you would fetch group members with their locations
-      // For now, we'll simulate with mock data
-      const mockMembers: GroupMember[] = [
-        {
-          _id: '1',
-          name: 'You',
-          liveLocation: {
-            coordinates: [77.2090, 28.6139] // [longitude, latitude]
-          }
-        },
-        {
-          _id: '2',
-          name: 'Rahul Sharma',
-          liveLocation: {
-            coordinates: [77.2150, 28.6200]
-          }
-        },
-        {
-          _id: '3',
-          name: 'Priya Patel',
-          liveLocation: {
-            coordinates: [77.2000, 28.6100]
-          }
-        }
-      ];
+      // Fetch real group members with their locations
+      const response = await fetch(`/api/group/${groupId}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const result = await response.json();
+      const groupData = result.data;
       
-      setMembers(mockMembers);
-      updateMapMarkers(mockMembers);
+      // Extract members with their locations
+      const membersWithLocations = groupData.members.map((member: any) => ({
+        _id: member._id,
+        name: member.name,
+        liveLocation: member.liveLocation
+      })).filter((member: GroupMember) => member.liveLocation);
+      
+      setMembers(membersWithLocations);
+      createMap(membersWithLocations);
     } catch (err) {
       setError('Failed to load group members');
       console.error('Error loading group members:', err);
@@ -101,41 +54,37 @@ const GroupMap: React.FC<GroupMapProps> = ({ groupId }) => {
     }
   };
 
-  const updateMapMarkers = (members: GroupMember[]) => {
-    if (!mapInstanceRef.current) return;
+  const createMap = async (members: GroupMember[]) => {
+    if (!mapRef.current) return;
     
-    // Clear existing markers
-    markersRef.current.forEach(marker => marker.setMap(null));
-    markersRef.current = [];
-    
-    // Add markers for each member
-    members.forEach(member => {
-      if (member.liveLocation) {
-        const position = {
-          lat: member.liveLocation.coordinates[1],
-          lng: member.liveLocation.coordinates[0]
-        };
+    try {
+      // Find the bounds of all locations
+      if (members.length > 0) {
+        const coordinates = members.map(member => member.liveLocation!.coordinates);
+        const lons = coordinates.map(coord => coord[0]);
+        const lats = coordinates.map(coord => coord[1]);
         
-        const marker = new google.maps.Marker({
-          position,
-          map: mapInstanceRef.current,
-          title: member.name
+        const minLon = Math.min(...lons);
+        const maxLon = Math.max(...lons);
+        const minLat = Math.min(...lats);
+        const maxLat = Math.max(...lats);
+        
+        // Create a static map URL using Geoapify
+        const bbox = `${minLon},${minLat},${maxLon},${maxLat}`;
+        const width = mapRef.current.clientWidth;
+        const height = 384; // 384px height (h-96)
+        
+        const mapUrl = `https://maps.geoapify.com/v1/staticmap?style=osm-bright&bbox=${bbox}&width=${width}&height=${height}&apiKey=86ddba99f19b4a509f47b4c94c073f80`;
+        
+        setMapData({
+          url: mapUrl,
+          members: members
         });
-        
-        // Add info window
-        // Simple label instead of InfoWindow for now
-        const label = member.name;
-        
-        // No click listener for now
-        
-        markersRef.current.push(marker);
-        
-        // Center map on current user
-        if (member._id === '1') {
-          mapInstanceRef.current.setCenter(position);
-        }
       }
-    });
+    } catch (err) {
+      setError('Failed to create map');
+      console.error('Error creating map:', err);
+    }
   };
 
   if (loading) {
@@ -157,7 +106,32 @@ const GroupMap: React.FC<GroupMapProps> = ({ groupId }) => {
         <h3 className="text-lg leading-6 font-medium text-gray-900">Group Location</h3>
         <p className="mt-1 text-sm text-gray-500">Real-time location of group members</p>
       </div>
-      <div ref={mapRef} className="h-96 w-full"></div>
+      
+      {mapData ? (
+        <div className="relative">
+          <img 
+            src={mapData.url} 
+            alt="Group locations map" 
+            className="w-full h-96 object-cover"
+            onError={(e) => {
+              setError('Failed to load map image');
+              console.error('Map image failed to load');
+            }}
+          />
+          
+          {/* Member markers would be positioned here if we had a more complex implementation */}
+          <div className="absolute top-2 left-2 bg-white bg-opacity-90 rounded p-2 text-sm">
+            <div className="flex items-center">
+              <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+              <span>Group Members</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="h-96 flex items-center justify-center bg-gray-100">
+          <p className="text-gray-500">No location data available</p>
+        </div>
+      )}
       
       {error && (
         <div className="px-4 py-3 bg-red-50 border-t border-red-100">
@@ -165,17 +139,22 @@ const GroupMap: React.FC<GroupMapProps> = ({ groupId }) => {
         </div>
       )}
       
+      {/* Member list */}
       <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-        <div className="flex items-center">
-          <div className="flex items-center mr-4">
-            <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
-            <span className="text-xs text-gray-600">You</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-            <span className="text-xs text-gray-600">Group Members</span>
-          </div>
-        </div>
+        <h4 className="text-sm font-medium text-gray-900 mb-2">Group Members</h4>
+        <ul className="space-y-1">
+          {members.map((member) => (
+            <li key={member._id} className="flex items-center text-sm text-gray-600">
+              <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
+              <span>{member.name}</span>
+              {member.liveLocation && (
+                <span className="ml-2 text-xs text-gray-500">
+                  ({member.liveLocation.coordinates[1].toFixed(4)}, {member.liveLocation.coordinates[0].toFixed(4)})
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );
