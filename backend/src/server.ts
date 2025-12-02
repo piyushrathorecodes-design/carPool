@@ -6,7 +6,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import http from 'http';
 import { Server } from 'socket.io';
-import { developmentConfig } from './config/development.config'; // Import from correct path
+import { developmentConfig } from './config/development.config';
 
 // Load environment variables
 dotenv.config();
@@ -44,55 +44,41 @@ const io = new Server(server, {
 // Make io accessible to routes
 app.set('io', io);
 
-// Security middleware with fixed COOP policy
+// Security middleware
 app.use(helmet({
-  crossOriginOpenerPolicy: false, // Disable to fix window.closed warnings
+  crossOriginOpenerPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" },
-  crossOriginEmbedderPolicy: false // Disable for better compatibility
+  crossOriginEmbedderPolicy: false
 }));
 
-// FIXED: TypeScript-compliant CORS configuration
-const corsOptions = {
+// CORS configuration - SIMPLE and TypeScript compliant
+app.use(cors({
   origin: config.security.cors.origin,
   credentials: config.security.cors.credentials,
-  methods: config.security.cors.methods,
-  allowedHeaders: config.security.cors.allowedHeaders,
-  exposedHeaders: config.security.cors.exposedHeaders,
-  optionsSuccessStatus: config.security.cors.optionsSuccessStatus
-};
+  methods: config.security.cors.methods
+}));
 
-app.use(cors(corsOptions));
-
-// Additional CORS headers for better compatibility
+// Manual CORS headers for preflight requests
 app.use((req: Request, res: Response, next: NextFunction) => {
   const origin = req.headers.origin;
-  const allowedOrigins = config.security.cors.origin;
   
-  // Check if origin is allowed
-  if (origin && Array.isArray(allowedOrigins) && allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else if (origin && typeof allowedOrigins === 'string' && allowedOrigins === origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  } else if (origin && typeof allowedOrigins === 'function') {
-    // Handle function-based CORS
-    const allowed = (allowedOrigin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      if (allowedOrigin && allowedOrigins === origin) {
-        callback(null, true);
-      } else {
-        callback(null, false);
-      }
-    };
+  // Set CORS headers
+  if (origin) {
+    const allowedOrigins = config.security.cors.origin;
     
-    allowed(origin, (err, allow) => {
-      if (allow) {
-        res.setHeader('Access-Control-Allow-Origin', origin || '');
+    // Check if origin is allowed
+    if (Array.isArray(allowedOrigins)) {
+      if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
       }
-    });
+    } else if (typeof allowedOrigins === 'string' && allowedOrigins === origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
   }
   
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -106,10 +92,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// MongoDB connection - FIXED: Remove deprecated options
+// MongoDB connection
 const connectDB = async (): Promise<void> => {
   try {
-    // Remove deprecated options for newer Mongoose versions
     await mongoose.connect(config.mongodb.uri);
     console.log('✅ Connected to MongoDB');
     if (mongoose.connection.db) {
@@ -162,13 +147,7 @@ app.get('/api/test-cors', (req: Request, res: Response) => {
   res.status(200).json({
     success: true,
     message: 'CORS test successful',
-    origin: req.headers.origin,
-    allowedOrigins: config.security.cors.origin,
-    isAllowed: req.headers.origin 
-      ? (Array.isArray(config.security.cors.origin) 
-          ? config.security.cors.origin.includes(req.headers.origin)
-          : config.security.cors.origin === req.headers.origin)
-      : true
+    origin: req.headers.origin
   });
 });
 
@@ -179,10 +158,7 @@ app.get('/', (req: Request, res: Response) => {
     version: '1.0.0',
     status: 'running',
     environment: config.server.environment,
-    timestamp: new Date().toISOString(),
-    cors: {
-      allowedOrigins: config.security.cors.origin
-    }
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -298,7 +274,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Handle errors
   socket.on('error', (error) => {
     console.error('Socket error:', error);
   });

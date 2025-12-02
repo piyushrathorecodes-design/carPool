@@ -13,7 +13,6 @@ export const developmentConfig = {
   // MongoDB configuration
   mongodb: {
     uri: process.env.MONGODB_URI || 'mongodb+srv://piyushrathore:piyushcodes@cluster0.wiqfcjk.mongodb.net/carpoolgrp?retryWrites=true&w=majority&appName=Cluster0'
-    // Removed deprecated options for newer Mongoose versions
   },
   
   // Security settings
@@ -25,10 +24,7 @@ export const developmentConfig = {
     cors: {
       origin: allowedOrigins, // Now accepts multiple origins
       credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-      exposedHeaders: ['Content-Range', 'X-Content-Range'],
-      optionsSuccessStatus: 200
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH']
     }
   },
   
