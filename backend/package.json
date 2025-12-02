@@ -16,7 +16,7 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "type-check": "tsc --noEmit",
     "postinstall": "npm run build",
-    "prestart": "npm run build"
+    "prestart": ""
   },
   "keywords": [
     "campus",
