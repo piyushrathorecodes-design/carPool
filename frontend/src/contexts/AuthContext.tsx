@@ -2,6 +2,13 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import type { ReactNode } from 'react';
 
+// Declare Google types
+declare global {
+  interface Window {
+    google: any;
+  }
+}
+
 // Set base URL for API requests
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
@@ -118,11 +125,74 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Google Sign-In function
   const handleGoogleSignIn = async () => {
     try {
-      // Show an alert that Google Sign-In is not configured
-      alert('Google Sign-In is not configured for this deployment. Please use email/password login instead.');
-      // Alternatively, you could implement Google Sign-In on the frontend using Google's JavaScript SDK
-      // For now, we'll just reject the promise to prevent navigation
-      throw new Error('Google Sign-In not configured');
+      // Check if we have a Google Client ID
+      const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      
+      if (!googleClientId) {
+        throw new Error('Google Sign-In is not configured for this deployment. Please use email/password login instead.');
+      }
+      
+      // Create a promise that will resolve when Google Auth is ready
+      const googleAuthReady = new Promise((resolve, reject) => {
+        if (typeof window !== 'undefined' && window.google && window.google.accounts) {
+          resolve(window.google.accounts);
+        } else {
+          // Dynamically load the Google Platform library
+          const script = document.createElement('script');
+          script.src = 'https://accounts.google.com/gsi/client';
+          script.async = true;
+          script.defer = true;
+          script.onload = () => resolve((window as any).google.accounts);
+          script.onerror = () => reject(new Error('Failed to load Google Platform library'));
+          document.head.appendChild(script);
+        }
+      });
+      
+      // Wait for Google Auth to be ready
+      const accounts: any = await googleAuthReady;
+      
+      // Create a promise for the OAuth flow
+      return new Promise<void>((resolve, reject) => {
+        // Initialize Google Auth client
+        const client = accounts.oauth2.initTokenClient({
+          client_id: googleClientId,
+          scope: 'openid profile email',
+          callback: async (response: any) => {
+            if (response.error) {
+              reject(new Error(response.error_description || response.error));
+              return;
+            }
+            
+            try {
+              // Send the token to your backend for verification
+              const res = await axios.post('/api/auth/google', { 
+                access_token: response.access_token 
+              });
+              
+              const { token, user } = res.data;
+              
+              // Ensure the user object has the correct structure
+              const userData = {
+                id: user._id || user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+              };
+              
+              localStorage.setItem('token', token);
+              setToken(token);
+              setUser(userData);
+              axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+              resolve();
+            } catch (err: any) {
+              reject(new Error(err.response?.data?.message || 'Failed to authenticate with Google'));
+            }
+          },
+        });
+        
+        // Request authorization
+        client.requestAccessToken();
+      });
     } catch (error) {
       console.error('Google sign-in error:', error);
       throw error;
