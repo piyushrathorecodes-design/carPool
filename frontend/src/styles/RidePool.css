@@ -211,6 +211,18 @@ body {
   transform: translateY(-2px);
 }
 
+.ridepool-btn-tertiary {
+  background: linear-gradient(135deg, var(--ridepool-accent) 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+}
+
+.ridepool-btn-tertiary:hover {
+  background: linear-gradient(135deg, #059669 0%, var(--ridepool-accent) 100%);
+  box-shadow: 0 6px 8px rgba(16, 185, 129, 0.4);
+  transform: translateY(-2px);
+}
+
 .ridepool-input {
   background: rgba(30, 41, 59, 0.7);
   border: 1px solid rgba(71, 85, 105, 0.5);

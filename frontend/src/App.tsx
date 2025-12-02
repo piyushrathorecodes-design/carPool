@@ -9,6 +9,8 @@ import FindPool from './pages/FindPool';
 import GroupDetail from './pages/GroupDetail';
 import Profile from './pages/Profile';
 import RidePoolDashboard from './pages/RidePoolDashboard';
+import GroupsPage from './pages/GroupsPage';
+import GroupChatPage from './pages/GroupChatPage';
 import './App.css';
 
 // Background Animation Component
@@ -135,6 +137,21 @@ function App() {
                       <Profile />
                     </main>
                   </div>
+                </ProtectedRoute>
+              } />
+              <Route path="/groups" element={
+                <ProtectedRoute>
+                  <div className="min-h-screen flex flex-col">
+                    <Navbar />
+                    <main className="flex-grow pt-16">
+                      <GroupsPage />
+                    </main>
+                  </div>
+                </ProtectedRoute>
+              } />
+              <Route path="/group-chat/:groupId" element={
+                <ProtectedRoute>
+                  <GroupChatPage />
                 </ProtectedRoute>
               } />
             </Routes>

@@ -33,6 +33,9 @@ const Navbar: React.FC = () => {
                 <Link to="/find-pool" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700 transition-colors duration-200 hover-lift">
                   Find Pool
                 </Link>
+                <Link to="/groups" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700 transition-colors duration-200 hover-lift">
+                  Groups
+                </Link>
                 <Link to="/profile" className="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700 transition-colors duration-200 hover-lift">
                   Profile
                 </Link>
@@ -98,6 +101,9 @@ const Navbar: React.FC = () => {
                 </Link>
                 <Link to="/find-pool" className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700 transition-colors duration-200">
                   Find Pool
+                </Link>
+                <Link to="/groups" className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700 transition-colors duration-200">
+                  Groups
                 </Link>
                 <Link to="/profile" className="block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700 transition-colors duration-200">
                   Profile

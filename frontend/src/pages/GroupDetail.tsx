@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import io from 'socket.io-client';
-import axios from 'axios';
+import api from '../services/api.service';
+import { useAuth } from '../contexts/AuthContext';
 import LocationTracker from '../components/LocationTracker';
 import GroupMap from '../components/GroupMap';
 
@@ -9,6 +10,7 @@ let socket: any;
 
 const GroupDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { isAuthenticated, token } = useAuth();
   const [group, setGroup] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -17,14 +19,32 @@ const GroupDetail: React.FC = () => {
   const [showFareCalculator, setShowFareCalculator] = useState(false);
   const [error, setError] = useState('');
 
+  const handleJoinGroup = async () => {
+    try {
+      await api.post(`/api/group/join/${id}`);
+      // Refresh the page to load the group data
+      window.location.reload();
+    } catch (err: any) {
+      console.error('Error joining group:', err);
+      alert('Failed to join group. Please try again.');
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError('');
         
+        // Check if user is authenticated
+        if (!isAuthenticated) {
+          setError('You must be logged in to view group details.');
+          setLoading(false);
+          return;
+        }
+        
         // Fetch group data
-        const groupResponse = await axios.get(`/api/group/${id}`);
+        const groupResponse = await api.get(`/api/group/${id}`);
         
         // Transform group data to match UI structure
         const transformedGroup = {
@@ -50,7 +70,7 @@ const GroupDetail: React.FC = () => {
         setGroup(transformedGroup);
         
         // Fetch chat messages for this group
-        const messagesResponse = await axios.get(`/api/chat/history/${id}`);
+        const messagesResponse = await api.get(`/api/chat/history/${id}`);
         
         // Transform messages to match UI structure
         const transformedMessages = messagesResponse.data.data.map((message: any) => ({
@@ -63,7 +83,19 @@ const GroupDetail: React.FC = () => {
         setMessages(transformedMessages);
       } catch (err: any) {
         console.error('Error fetching group data:', err);
-        setError('Failed to load group data. Please try again later.');
+        // Check if it's a 403 error (not a member)
+        if (err.response?.status === 403) {
+          setError('You are not a member of this group. Please join the group first.');
+        } else if (err.response?.status === 404) {
+          setError('Group not found.');
+        } else if (err.response?.status === 401 || !isAuthenticated) {
+          setError('You must be logged in to view group details. Redirecting to login page...');
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 3000);
+        } else {
+          setError('Failed to load group data. Please try again later.');
+        }
       } finally {
         setLoading(false);
       }
@@ -82,14 +114,14 @@ const GroupDetail: React.FC = () => {
     return () => {
       socket.disconnect();
     };
-  }, [id]);
+  }, [id, isAuthenticated]);
 
   const sendMessage = async () => {
     if (newMessage.trim() === '') return;
     
     try {
       // Send message to backend
-      await axios.post('/api/chat/send', {
+      await api.post('/api/chat/send', {
         groupId: id,
         content: newMessage,
         messageType: 'text'
@@ -139,13 +171,21 @@ const GroupDetail: React.FC = () => {
           </svg>
           <h3 className="mt-2 text-lg font-medium text-white">Error Loading Group</h3>
           <p className="mt-1 text-sm text-gray-300">{error}</p>
-          <div className="mt-6">
+          <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
             <button
               onClick={() => window.location.reload()}
               className="ridepool-btn ridepool-btn-primary inline-flex items-center px-4 py-2 rounded-md text-sm font-medium"
             >
               Retry
             </button>
+            {error.includes('not a member') && id && (
+              <button
+                onClick={handleJoinGroup}
+                className="ridepool-btn ridepool-btn-secondary inline-flex items-center px-4 py-2 rounded-md text-sm font-medium"
+              >
+                Join Group
+              </button>
+            )}
           </div>
         </div>
       </div>
