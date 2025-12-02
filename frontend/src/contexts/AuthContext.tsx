@@ -50,16 +50,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false);
     }
     
-    // Listen for Firebase auth state changes
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (!firebaseUser && !storedToken) {
-        // No Firebase user and no stored token, ensure we're logged out
-        setLoading(false);
-      }
-    });
+    // Listen for Firebase auth state changes (only if Firebase is initialized)
+    let unsubscribe: (() => void) | undefined;
+    if (auth) {
+      unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        if (!firebaseUser && !storedToken) {
+          // No Firebase user and no stored token, ensure we're logged out
+          setLoading(false);
+        }
+      });
+    }
     
     // Cleanup subscription
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   // Load user data
@@ -123,8 +130,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Logout function
   const logout = async () => {
     try {
-      // Sign out from Firebase
-      await signOut(auth);
+      // Sign out from Firebase (only if Firebase is initialized)
+      if (auth) {
+        await signOut(auth);
+      }
     } catch (error) {
       console.error('Error signing out from Firebase:', error);
     } finally {
@@ -138,6 +147,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Google Sign-In function
   const handleGoogleSignIn = async () => {
+    // Check if Firebase is properly initialized
+    if (!auth || !googleProvider) {
+      throw new Error('Google Sign-In is not properly configured. Please contact support.');
+    }
+    
     try {
       // Sign in with Google using Firebase
       const result = await signInWithPopup(auth, googleProvider);

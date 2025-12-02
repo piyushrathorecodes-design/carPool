@@ -2,6 +2,9 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 
+// Export types for use in other files
+export type { Auth, GoogleAuthProvider as GoogleAuthProviderType } from 'firebase/auth';
+
 // Firebase configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -13,13 +16,43 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Validate Firebase configuration
+const validateFirebaseConfig = (): boolean => {
+  const missingKeys: string[] = [];
+  Object.entries(firebaseConfig).forEach(([key, value]) => {
+    if (!value) {
+      missingKeys.push(key);
+    }
+  });
+  
+  if (missingKeys.length > 0) {
+    console.warn('Missing Firebase configuration keys:', missingKeys);
+    return false;
+  }
+  
+  return true;
+};
 
-// Initialize Firebase Authentication and get a reference to the service
-const auth = getAuth(app);
+let app: ReturnType<typeof initializeApp> | undefined;
+let auth: ReturnType<typeof getAuth> | undefined;
+let googleProvider: GoogleAuthProvider | undefined;
 
-// Google Auth Provider
-const googleProvider = new GoogleAuthProvider();
+// Only initialize Firebase if configuration is valid
+if (validateFirebaseConfig()) {
+  try {
+    // Initialize Firebase
+    app = initializeApp(firebaseConfig);
+    
+    // Initialize Firebase Authentication and get a reference to the service
+    auth = getAuth(app);
+    
+    // Google Auth Provider
+    googleProvider = new GoogleAuthProvider();
+  } catch (error) {
+    console.error('Firebase initialization error:', error);
+  }
+} else {
+  console.warn('Firebase not initialized due to missing configuration');
+}
 
 export { app, auth, googleProvider };
