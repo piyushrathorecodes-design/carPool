@@ -1,7 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import type { ReactNode } from 'react';
-import { authAPI } from '../services/api.service';
 
 // Set base URL for API requests
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
