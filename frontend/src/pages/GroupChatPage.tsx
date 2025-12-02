@@ -24,8 +24,6 @@ const GroupChatPage: React.FC = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [groupName, setGroupName] = useState('Group Chat');
-  const [currentUser, setCurrentUser] = useState<any>(null);
   
   const { user } = useAuth();
   const navigate = useNavigate();

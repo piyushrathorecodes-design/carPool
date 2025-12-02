@@ -6,6 +6,13 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+
+frontend/.env
+
+
+
+
+
 # Production builds
 dist/
 build/

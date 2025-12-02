@@ -49,7 +49,6 @@ const GroupsPage: React.FC = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   
-  const { user } = useAuth();
   const navigate = useNavigate();
 
   // Load groups
