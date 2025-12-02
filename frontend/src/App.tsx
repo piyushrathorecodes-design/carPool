@@ -130,6 +130,9 @@ function App() {
                   </div>
                 </ProtectedRoute>
               } />
+              <Route path="/group/create" element={
+                <Navigate to="/groups" replace />
+              } />
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <div className="min-h-screen flex flex-col">

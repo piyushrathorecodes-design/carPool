@@ -73,9 +73,13 @@ const GroupDetail: React.FC = () => {
         }
         
         // Check if group ID is provided
-        if (!id) {
+        if (!id || id === 'create') {
           setError('Invalid group ID.');
           setLoading(false);
+          // Redirect to groups page after a delay
+          setTimeout(() => {
+            navigate('/groups');
+          }, 2000);
           return;
         }
         

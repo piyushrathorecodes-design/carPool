@@ -110,9 +110,12 @@ export const createGroup = async (req: any, res: Response): Promise<void> => {
 // @access  Private
 export const joinGroup = async (req: any, res: Response): Promise<void> => {
   try {
+    console.log('Joining group:', req.params.groupId, 'User ID:', req.user.id);
+    
     const group = await Group.findById(req.params.groupId);
     
     if (!group) {
+      console.log('Group not found:', req.params.groupId);
       res.status(404).json({
         success: false,
         message: 'Group not found'
@@ -120,8 +123,11 @@ export const joinGroup = async (req: any, res: Response): Promise<void> => {
       return;
     }
     
+    console.log('Found group:', group._id, 'Status:', group.status, 'Members:', group.members.length, 'Seat count:', group.seatCount);
+    
     // Check if group is open
     if (group.status !== 'Open') {
+      console.log('Group is not open:', group.status);
       res.status(400).json({
         success: false,
         message: 'Group is not open for new members'
@@ -134,6 +140,8 @@ export const joinGroup = async (req: any, res: Response): Promise<void> => {
       member.user.toString() === req.user.id
     );
     
+    console.log('User is already member:', isMember);
+    
     if (isMember) {
       res.status(400).json({
         success: false,
@@ -144,6 +152,7 @@ export const joinGroup = async (req: any, res: Response): Promise<void> => {
     
     // Check if group is full
     if (group.members.length >= group.seatCount) {
+      console.log('Group is full:', group.members.length, '>=', group.seatCount);
       res.status(400).json({
         success: false,
         message: 'Group is full'
@@ -159,6 +168,8 @@ export const joinGroup = async (req: any, res: Response): Promise<void> => {
     });
     
     await group.save();
+    
+    console.log('User added to group successfully');
     
     // Add user to CometChat group
     try {
@@ -184,6 +195,7 @@ export const joinGroup = async (req: any, res: Response): Promise<void> => {
       data: group
     });
   } catch (err: any) {
+    console.error('Error joining group:', err);
     res.status(500).json({
       success: false,
       message: err.message || 'Server Error'

@@ -97,6 +97,12 @@ const GroupsPage: React.FC = () => {
         seatCount
       });
       
+      // Navigate to the newly created group
+      if (response.data.data._id) {
+        navigate(`/group/${response.data.data._id}`);
+        return;
+      }
+      
       // Refresh groups list
       await loadGroups();
       

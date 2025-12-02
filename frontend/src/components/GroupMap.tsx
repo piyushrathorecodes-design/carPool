@@ -23,12 +23,22 @@ const GroupMap: React.FC<GroupMapProps> = ({ groupId }) => {
 
   // Load group members and create map
   useEffect(() => {
-    loadGroupMembers();
-  }, []);
+    // Don't load if groupId is empty or invalid
+    if (groupId && groupId !== 'create') {
+      loadGroupMembers();
+    }
+  }, [groupId]);
 
   const loadGroupMembers = async () => {
     try {
       setLoading(true);
+      
+      // Validate groupId before making request
+      if (!groupId || groupId === 'create') {
+        setError('Invalid group ID');
+        setLoading(false);
+        return;
+      }
       
       // Fetch real group members with their locations
       const response = await groupAPI.getById(groupId);
