@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import io from 'socket.io-client';
+import { useAuth } from '../contexts/AuthContext';
 
 let socket: any;
 
@@ -13,6 +14,7 @@ const LocationTracker: React.FC<LocationTrackerProps> = ({ onLocationUpdate }) =
   const [tracking, setTracking] = useState(false);
   const [error, setError] = useState('');
   const watchIdRef = useRef<number | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     // Initialize socket connection
@@ -55,7 +57,7 @@ const LocationTracker: React.FC<LocationTrackerProps> = ({ onLocationUpdate }) =
         
         // Emit location update via socket
         socket.emit('location_update', {
-          userId: 'current_user_id', // This should be replaced with actual user ID
+          userId: user?.id || 'unknown_user',
           location: { latitude, longitude }
         });
       },

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { groupAPI } from '../services/api.service';
 import { useAuth } from '../contexts/AuthContext';
+import MapInput from '../components/MapInput';
 
 interface Group {
   _id: string;
@@ -37,8 +38,14 @@ const GroupsPage: React.FC = () => {
   const [groupDescription, setGroupDescription] = useState('');
   const [pickupAddress, setPickupAddress] = useState('');
   const [dropAddress, setDropAddress] = useState('');
+  const [pickupCoordinates, setPickupCoordinates] = useState<[number, number] | null>(null);
+  const [dropCoordinates, setDropCoordinates] = useState<[number, number] | null>(null);
+  const [preferredGender, setPreferredGender] = useState('Any');
   const [seatCount, setSeatCount] = useState(4);
   const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null);
+  const [showSearchForm, setShowSearchForm] = useState(true);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
   
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -61,6 +68,58 @@ const GroupsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Search for matching groups
+  const handleSearchGroups = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!pickupAddress.trim() || !dropAddress.trim()) {
+      setError('Both pickup and drop addresses are required');
+      return;
+    }
+    
+    if (!pickupCoordinates || !dropCoordinates) {
+      setError('Please select locations from the suggestions');
+      return;
+    }
+    
+    try {
+      setSearching(true);
+      
+      // Search for matching groups
+      const response = await groupAPI.match({
+        pickupLocation: {
+          address: pickupAddress,
+          coordinates: pickupCoordinates
+        },
+        dropLocation: {
+          address: dropAddress,
+          coordinates: dropCoordinates
+        },
+        preferredGender
+      });
+      
+      setSearchResults(response.data.data);
+      setShowSearchForm(false); // Hide search form and show results
+    } catch (err: any) {
+      console.error('Error searching groups:', err);
+      setError('Failed to search groups. Please try again.');
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  // Reset search and show search form again
+  const resetSearch = () => {
+    setSearchResults([]);
+    setShowSearchForm(true);
+    setShowCreateForm(false);
+    setPickupAddress('');
+    setDropAddress('');
+    setPickupCoordinates(null);
+    setDropCoordinates(null);
+    setPreferredGender('Any');
   };
 
   // Create a new group
@@ -87,11 +146,11 @@ const GroupsPage: React.FC = () => {
         route: {
           pickup: {
             address: pickupAddress,
-            coordinates: [0, 0] // Placeholder coordinates
+            coordinates: pickupCoordinates
           },
           drop: {
             address: dropAddress,
-            coordinates: [0, 0] // Placeholder coordinates
+            coordinates: dropCoordinates
           }
         },
         seatCount
@@ -111,6 +170,8 @@ const GroupsPage: React.FC = () => {
       setGroupDescription('');
       setPickupAddress('');
       setDropAddress('');
+      setPickupCoordinates(null);
+      setDropCoordinates(null);
       setSeatCount(4);
       setShowCreateForm(false);
       
@@ -182,14 +243,97 @@ const GroupsPage: React.FC = () => {
               <h1 className="text-3xl font-bold text-gray-900">Student Groups</h1>
               <p className="mt-2 text-gray-700">Connect with fellow students traveling on similar routes</p>
             </div>
-            <button
-              onClick={() => setShowCreateForm(!showCreateForm)}
-              className="ridepool-btn ridepool-btn-primary px-6 py-3 rounded-lg font-semibold hover-lift animate-pulse"
-            >
-              {showCreateForm ? 'Cancel' : 'Create Group'}
-            </button>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowSearchForm(true);
+                  setShowCreateForm(false);
+                }}
+                className={`ridepool-btn px-6 py-3 rounded-lg font-semibold hover-lift ${showSearchForm && !showCreateForm ? 'ridepool-btn-primary' : 'ridepool-btn-secondary'}`}
+              >
+                Find Group
+              </button>
+              <button
+                onClick={() => {
+                  setShowCreateForm(!showCreateForm);
+                  setShowSearchForm(false);
+                }}
+                className={`ridepool-btn px-6 py-3 rounded-lg font-semibold hover-lift ${showCreateForm ? 'ridepool-btn-primary' : 'ridepool-btn-secondary'}`}
+              >
+                {showCreateForm ? 'Cancel' : 'Create Group'}
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Search Form */}
+        {showSearchForm && (
+          <div className="mb-8 ridepool-card p-6 animate-slideInTop">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Find Groups</h2>
+            <form onSubmit={handleSearchGroups} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="searchPickupAddress" className="block text-sm font-medium text-gray-700 mb-1">
+                    Pickup Location *
+                  </label>
+                  <MapInput
+                    onLocationSelect={(location) => {
+                      setPickupAddress(location.address);
+                      setPickupCoordinates(location.coordinates);
+                    }}
+                    placeholder="Enter pickup location"
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="searchDropAddress" className="block text-sm font-medium text-gray-700 mb-1">
+                    Drop Location *
+                  </label>
+                  <MapInput
+                    onLocationSelect={(location) => {
+                      setDropAddress(location.address);
+                      setDropCoordinates(location.coordinates);
+                    }}
+                    placeholder="Enter drop location"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label htmlFor="preferredGender" className="block text-sm font-medium text-gray-700 mb-1">
+                  Gender Preference
+                </label>
+                <select
+                  id="preferredGender"
+                  value={preferredGender}
+                  onChange={(e) => setPreferredGender(e.target.value)}
+                  className="ridepool-input w-full rounded-md py-2 px-3 focus:z-10 sm:text-sm"
+                >
+                  <option value="Any">Any</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={resetSearch}
+                  className="ridepool-btn ridepool-btn-secondary px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  Reset
+                </button>
+                <button
+                  type="submit"
+                  disabled={searching}
+                  className="ridepool-btn ridepool-btn-primary px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
+                >
+                  {searching ? 'Searching...' : 'Search Groups'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {/* Error Message */}
         {error && (
@@ -237,14 +381,12 @@ const GroupsPage: React.FC = () => {
                   <label htmlFor="pickupAddress" className="block text-sm font-medium text-gray-700 mb-1">
                     Pickup Location *
                   </label>
-                  <input
-                    type="text"
-                    id="pickupAddress"
-                    value={pickupAddress}
-                    onChange={(e) => setPickupAddress(e.target.value)}
-                    className="ridepool-input w-full rounded-md py-2 px-3 focus:z-10 sm:text-sm"
+                  <MapInput
+                    onLocationSelect={(location) => {
+                      setPickupAddress(location.address);
+                      setPickupCoordinates(location.coordinates);
+                    }}
                     placeholder="Enter pickup location"
-                    required
                   />
                 </div>
                 
@@ -252,14 +394,12 @@ const GroupsPage: React.FC = () => {
                   <label htmlFor="dropAddress" className="block text-sm font-medium text-gray-700 mb-1">
                     Drop Location *
                   </label>
-                  <input
-                    type="text"
-                    id="dropAddress"
-                    value={dropAddress}
-                    onChange={(e) => setDropAddress(e.target.value)}
-                    className="ridepool-input w-full rounded-md py-2 px-3 focus:z-10 sm:text-sm"
+                  <MapInput
+                    onLocationSelect={(location) => {
+                      setDropAddress(location.address);
+                      setDropCoordinates(location.coordinates);
+                    }}
                     placeholder="Enter drop location"
-                    required
                   />
                 </div>
               </div>
@@ -297,6 +437,122 @@ const GroupsPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {/* Search Results */}
+        {!showSearchForm && searchResults.length > 0 && (
+          <div className="mb-8 ridepool-card p-6 animate-fade-in">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Matching Groups ({searchResults.length})</h2>
+              <button
+                onClick={resetSearch}
+                className="ridepool-btn ridepool-btn-secondary px-4 py-2 rounded-md text-sm font-medium"
+              >
+                New Search
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {searchResults.map((group) => (
+                <div 
+                  key={group._id} 
+                  className="ridepool-card p-5 hover:bg-white hover:bg-opacity-70 transition-all duration-200 cursor-pointer animate-slideInLeft"
+                  onClick={() => goToGroupDetail(group._id)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">{group.groupName}</h3>
+                      <p className="mt-1 text-sm text-gray-700 line-clamp-2">
+                        {group.description || 'No description provided'}
+                      </p>
+                    </div>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      {Math.round(group.matchScore)}% match
+                    </span>
+                  </div>
+                  
+                  <div className="mt-3 text-sm text-gray-600">
+                    <div className="flex items-center">
+                      <svg className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                      </svg>
+                      {group.route.pickup.address} → {group.route.drop.address}
+                    </div>
+                    <div className="flex items-center mt-1">
+                      <svg className="flex-shrink-0 mr-1.5 h-4 w-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                      </svg>
+                      {Math.round(group.distanceSimilarity.pickup/1000)}km pickup, {Math.round(group.distanceSimilarity.drop/1000)}km drop
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                      </svg>
+                      {group.members.length}/{group.seatCount} seats
+                    </div>
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleJoinGroup(group._id);
+                      }}
+                      disabled={joiningGroupId === group._id}
+                      className="ridepool-btn ridepool-btn-primary px-3 py-1 rounded-md text-xs font-medium disabled:opacity-50"
+                    >
+                      {joiningGroupId === group._id ? 'Joining...' : 'Join Group'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-6 text-center">
+              <p className="text-gray-700 mb-4">Didn't find what you're looking for?</p>
+              <button
+                onClick={() => {
+                  setShowCreateForm(true);
+                  setShowSearchForm(false); // Hide search form when creating
+                }}
+                className="ridepool-btn ridepool-btn-primary px-6 py-3 rounded-lg font-semibold"
+              >
+                Create New Group
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {/* No Search Results */}
+        {!showSearchForm && searchResults.length === 0 && !searching && (
+          <div className="mb-8 ridepool-card p-6 animate-fade-in text-center">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No matching groups found</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Be the first to create a group for this route!
+            </p>
+            <div className="mt-6">
+              <button
+                onClick={() => {
+                  setShowCreateForm(true);
+                  setShowSearchForm(false); // Hide search form when creating
+                }}
+                className="ridepool-btn ridepool-btn-primary inline-flex items-center px-4 py-2 rounded-md text-sm font-medium"
+              >
+                Create New Group
+              </button>
+              <button
+                onClick={resetSearch}
+                className="ml-3 ridepool-btn ridepool-btn-secondary inline-flex items-center px-4 py-2 rounded-md text-sm font-medium"
+              >
+                Search Again
+              </button>
+            </div>
           </div>
         )}
 

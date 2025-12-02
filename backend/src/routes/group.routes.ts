@@ -6,7 +6,8 @@ import {
   lockGroup,
   getUserGroups,
   getGroup,
-  getAllGroups
+  getAllGroups,
+  matchGroups
 } from '../controllers/group.controller';
 import { protect } from '../middleware/auth.middleware';
 
@@ -30,6 +31,9 @@ router.route('/join/:groupId')
 
 router.route('/leave/:groupId')
   .post(leaveGroup);
+
+router.route('/match')
+  .post(matchGroups);
 
 router.route('/lock/:groupId')
   .patch(lockGroup);

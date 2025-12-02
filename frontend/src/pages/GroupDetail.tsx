@@ -26,6 +26,9 @@ interface GroupMember {
   phone: string;
   year: string;
   branch: string;
+  liveLocation?: {
+    coordinates: [number, number]; // [longitude, latitude]
+  };
 }
 
 interface GroupData {
@@ -49,8 +52,6 @@ const GroupDetail: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [fareAmount, setFareAmount] = useState('');
-  const [showFareCalculator, setShowFareCalculator] = useState(false);
   const [error, setError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -124,7 +125,8 @@ const GroupDetail: React.FC = () => {
             email: member.user.email,
             phone: member.user.phone,
             year: member.user.year || 'N/A',
-            branch: member.user.branch || 'N/A'
+            branch: member.user.branch || 'N/A',
+            liveLocation: member.user.liveLocation || null
           })),
           route: {
             pickup: groupResponse.data.data.route.pickup.address,
@@ -231,16 +233,6 @@ const GroupDetail: React.FC = () => {
       e.preventDefault();
       sendMessage();
     }
-  };
-
-  const calculateFare = () => {
-    if (!fareAmount || isNaN(Number(fareAmount))) return;
-      
-    const amount = parseFloat(fareAmount);
-    const memberCount = group?.members.length || 1;
-    const share = (amount / memberCount).toFixed(2);
-      
-    alert(`Total fare: ₹${amount}\nEach person owes: ₹${share}`);
   };
 
   if (loading) {
@@ -402,16 +394,6 @@ const GroupDetail: React.FC = () => {
               </div>
               <div className="border-t border-gray-200">
                 <div className="px-4 py-5 sm:p-6 space-y-3">
-                  <button
-                    onClick={() => setShowFareCalculator(!showFareCalculator)}
-                    className="ridepool-btn ridepool-btn-accent w-full flex items-center justify-center px-4 py-3 rounded-lg"
-                  >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Fare Calculator
-                  </button>
-                  
                   {group?.status === 'Open' && (
                     <button 
                       onClick={async () => {
@@ -458,56 +440,6 @@ const GroupDetail: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* Fare Calculator */}
-            {showFareCalculator && (
-              <div className="ridepool-card animate-slideInLeft">
-                <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900">Fare Calculator</h3>
-                </div>
-                <div className="border-t border-gray-200">
-                  <div className="px-4 py-5 sm:p-6">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Total Fare Amount (₹)
-                        </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span className="text-gray-500">₹</span>
-                          </div>
-                          <input
-                            type="number"
-                            value={fareAmount}
-                            onChange={(e) => setFareAmount(e.target.value)}
-                            className="ridepool-input pl-8 w-full py-2.5 rounded-lg"
-                            placeholder="0.00"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="bg-gradient-to-br from-blue-500 to-blue-600 bg-opacity-20 rounded-lg p-4 border border-blue-500 border-opacity-30">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-blue-800">Split among {group?.members.length} members:</span>
-                          <span className="text-lg font-bold text-blue-900">
-                            ₹{(parseFloat(fareAmount) / (group?.members.length || 1)).toFixed(2) || '0.00'}
-                          </span>
-                        </div>
-                        <p className="text-xs text-blue-700 mt-1">per person</p>
-                      </div>
-                      
-                      <button
-                        onClick={calculateFare}
-                        disabled={!fareAmount || isNaN(Number(fareAmount))}
-                        className="ridepool-btn ridepool-btn-primary w-full py-2.5 rounded-lg font-medium disabled:opacity-50"
-                      >
-                        Calculate Split
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Right Column - Map and Chat */}

@@ -10,12 +10,12 @@ import { v4 as uuidv4 } from 'uuid';
 export const createGroup = async (req: any, res: Response): Promise<void> => {
   try {
     console.log('Creating group with data:', req.body);
-    console.log('User ID:', req.user.id);
+    console.log('User ID:', req.user._id);
     
-    const { groupName, route, seatCount, description } = req.body;
+    const { groupName, route, seatCount, description, dateTime } = req.body;
     
     // Validate required fields
-    if (!groupName || !route || !route.pickup || !route.drop || !seatCount) {
+    if (!groupName || !route || !route.pickup || !route.drop || !seatCount || !dateTime) {
       res.status(400).json({
         success: false,
         message: 'Missing required fields'
@@ -30,11 +30,12 @@ export const createGroup = async (req: any, res: Response): Promise<void> => {
     const group = await Group.create({
       groupName,
       members: [{
-        user: req.user.id,
+        user: req.user._id,
         role: 'admin',
         joinedAt: new Date()
       }],
       route,
+      dateTime: new Date(dateTime),
       seatCount,
       chatRoomId,
       description
@@ -60,7 +61,7 @@ export const createGroup = async (req: any, res: Response): Promise<void> => {
 // @access  Private
 export const joinGroup = async (req: any, res: Response): Promise<void> => {
   try {
-    console.log('Joining group:', req.params.groupId, 'User ID:', req.user.id);
+    console.log('Joining group:', req.params.groupId, 'User ID:', req.user._id);
     
     const group = await Group.findById(req.params.groupId);
     
@@ -87,7 +88,7 @@ export const joinGroup = async (req: any, res: Response): Promise<void> => {
     
     // Check if user is already a member
     const isMember = group.members.some(member => 
-      member.user._id.toString() === req.user.id.toString()
+      member.user._id.toString() === req.user._id.toString()
     );
     
     console.log('User is already member:', isMember);
@@ -112,7 +113,7 @@ export const joinGroup = async (req: any, res: Response): Promise<void> => {
     
     // Add user to group
     group.members.push({
-      user: req.user.id,
+      user: req.user._id,
       role: 'member',
       joinedAt: new Date()
     });
@@ -151,7 +152,7 @@ export const leaveGroup = async (req: any, res: Response): Promise<void> => {
     
     // Check if user is a member
     const memberIndex = group.members.findIndex(member => 
-      member.user._id.toString() === req.user.id.toString()
+      member.user._id.toString() === req.user._id.toString()
     );
     
     if (memberIndex === -1) {
@@ -207,7 +208,7 @@ export const lockGroup = async (req: any, res: Response): Promise<void> => {
     
     // Check if user is admin of the group
     const isAdmin = group.members.some(member => 
-      member.user._id.toString() === req.user.id.toString() && member.role === 'admin'
+      member.user._id.toString() === req.user._id.toString() && member.role === 'admin'
     );
     
     if (!isAdmin) {
@@ -262,7 +263,7 @@ export const getAllGroups = async (req: any, res: Response): Promise<void> => {
 export const getUserGroups = async (req: any, res: Response): Promise<void> => {
   try {
     const groups = await Group.find({
-      'members.user': req.user.id
+      'members.user': req.user._id
     }).populate('members.user', 'name email phone year branch');
     
     res.status(200).json({
@@ -283,7 +284,7 @@ export const getUserGroups = async (req: any, res: Response): Promise<void> => {
 // @access  Private (Members only)
 export const getGroup = async (req: any, res: Response): Promise<void> => {
   try {
-    console.log('Getting group details:', req.params.groupId, 'User ID:', req.user.id, 'User ID type:', typeof req.user.id);
+    console.log('Getting group details:', req.params.groupId, 'User ID:', req.user._id, 'User ID type:', typeof req.user._id);
     
     const group = await Group.findById(req.params.groupId)
       .populate('members.user', 'name email phone year branch');
@@ -300,12 +301,12 @@ export const getGroup = async (req: any, res: Response): Promise<void> => {
     console.log('Found group:', group._id, 'Members:', group.members.map(m => ({
       userId: m.user._id.toString(),
       userType: typeof m.user._id,
-      comparison: m.user._id.toString() === req.user.id.toString()
+      comparison: m.user._id.toString() === req.user._id.toString()
     })));
     
     // Check if user is a member
     const isMember = group.members.some(member => 
-      member.user._id.toString() === req.user.id.toString()
+      member.user._id.toString() === req.user._id.toString()
     );
     
     console.log('User is member:', isMember);
@@ -329,4 +330,129 @@ export const getGroup = async (req: any, res: Response): Promise<void> => {
       message: err.message || 'Server Error'
     });
   }
+};
+
+// @desc    Match groups based on location and time
+// @route   POST /api/group/match
+// @access  Private
+export const matchGroups = async (req: any, res: Response): Promise<void> => {
+  try {
+    const { pickupLocation, dropLocation, preferredGender } = req.body;
+    
+    // Validate required fields
+    if (!pickupLocation || !dropLocation) {
+      res.status(400).json({
+        success: false,
+        message: 'Pickup location and drop location are required'
+      });
+      return;
+    }
+    
+    // Find matching groups with geospatial queries
+    const matchingGroups = await Group.find({
+      status: 'Open',
+      'members.0': { $exists: true }, // Has at least one member
+      $expr: { $lt: [{ $size: '$members' }, '$seatCount'] } // Not full
+    }).populate({
+      path: 'members.user',
+      select: 'name email gender year branch phone',
+      model: 'User'
+    });
+    
+    // Calculate match scores for each group
+    const scoredMatches = matchingGroups.map(group => {
+      // Skip groups without proper coordinates
+      if (!group.route.pickup.coordinates || !group.route.drop.coordinates ||
+          !pickupLocation.coordinates || !dropLocation.coordinates) {
+        return {
+          ...group.toObject(),
+          matchScore: 0,
+          distanceSimilarity: {
+            pickup: 0,
+            drop: 0
+          }
+        };
+      }
+      
+      // Calculate distance similarity (lower distance = higher score)
+      const pickupDistance = calculateDistanceHaversine(
+        pickupLocation.coordinates[1], // lat1
+        pickupLocation.coordinates[0], // lon1
+        group.route.pickup.coordinates[1], // lat2
+        group.route.pickup.coordinates[0] // lon2
+      );
+      
+      const dropDistance = calculateDistanceHaversine(
+        dropLocation.coordinates[1], // lat1
+        dropLocation.coordinates[0], // lon1
+        group.route.drop.coordinates[1], // lat2
+        group.route.drop.coordinates[0] // lon2
+      );
+      
+      // Calculate match score (0-100)
+      // Distance factor (60% weight): closer locations get higher scores
+      const distanceScore = Math.max(0, 60 - (pickupDistance + dropDistance) / 1000);
+      
+      // Gender preference factor (40% weight)
+      let genderScore = 0;
+      if (preferredGender && preferredGender !== 'Any') {
+        // Filter members who have gender property and match the preferred gender
+        const membersWithGender = group.members.filter(member => {
+          // Check if member.user is populated and has gender property
+          return member.user && 
+                 typeof member.user === 'object' && 
+                 'gender' in member.user && 
+                 member.user.gender === preferredGender;
+        });
+        // Higher score if more members match the preferred gender
+        genderScore = group.members.length > 0 ? (membersWithGender.length / group.members.length) * 40 : 0;
+      } else {
+        genderScore = 40; // Full score if no gender preference
+      }
+      
+      const matchScore = Math.min(100, distanceScore + genderScore);
+      
+      return {
+        ...group.toObject(),
+        matchScore,
+        distanceSimilarity: {
+          pickup: pickupDistance,
+          drop: dropDistance
+        }
+      };
+    });
+    
+    // Sort by match score descending and filter out low matches
+    const filteredMatches = scoredMatches
+      .filter(match => match.matchScore >= 30) // Only show matches with score >= 30
+      .sort((a, b) => b.matchScore - a.matchScore);
+    
+    res.status(200).json({
+      success: true,
+      count: filteredMatches.length,
+      data: filteredMatches
+    });
+  } catch (err: any) {
+    console.error('Match groups error:', err);
+    res.status(500).json({
+      success: false,
+      message: err.message || 'Server Error'
+    });
+  }
+};
+
+// Calculate distance between two points using Haversine formula
+const calculateDistanceHaversine = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371e3; // Earth radius in meters
+  const φ1 = lat1 * Math.PI/180;
+  const φ2 = lat2 * Math.PI/180;
+  const Δφ = (lat2-lat1) * Math.PI/180;
+  const Δλ = (lon2-lon1) * Math.PI/180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+          Math.cos(φ1) * Math.cos(φ2) *
+          Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c;
 };

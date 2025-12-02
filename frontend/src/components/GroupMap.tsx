@@ -84,32 +84,52 @@ const GroupMap: React.FC<GroupMapProps> = ({ groupId, groupData }) => {
     if (!mapRef.current) return;
     
     try {
-      // Find the bounds of all locations
+      // Always create a map, even if no members have locations
+      // Show a default map centered on a default location if no member locations
       if (members.length > 0) {
-        const coordinates = members.map(member => member.liveLocation!.coordinates);
-        const lons = coordinates.map(coord => coord[0]);
-        const lats = coordinates.map(coord => coord[1]);
+        const membersWithLocations = members.filter(member => member.liveLocation);
         
-        const minLon = Math.min(...lons);
-        const maxLon = Math.max(...lons);
-        const minLat = Math.min(...lats);
-        const maxLat = Math.max(...lats);
-        
-        // Create a static map URL using Geoapify
-        const bbox = `${minLon},${minLat},${maxLon},${maxLat}`;
-        const width = mapRef.current.clientWidth;
-        const height = 384; // 384px height (h-96)
-        
-        const mapUrl = `https://maps.geoapify.com/v1/staticmap?style=osm-bright&bbox=${bbox}&width=${width}&height=${height}&apiKey=86ddba99f19b4a509f47b4c94c073f80`;
-        
+        if (membersWithLocations.length > 0) {
+          // Create map with member locations
+          const coordinates = membersWithLocations.map(member => member.liveLocation!.coordinates);
+          const lons = coordinates.map(coord => coord[0]);
+          const lats = coordinates.map(coord => coord[1]);
+          
+          const minLon = Math.min(...lons);
+          const maxLon = Math.max(...lons);
+          const minLat = Math.min(...lats);
+          const maxLat = Math.max(...lats);
+          
+          // Create a static map URL using Geoapify
+          const bbox = `${minLon},${minLat},${maxLon},${maxLat}`;
+          const width = mapRef.current.clientWidth;
+          const height = 384; // 384px height (h-96)
+          
+          const mapUrl = `https://maps.geoapify.com/v1/staticmap?style=osm-bright&bbox=${bbox}&width=${width}&height=${height}&apiKey=86ddba99f19b4a509f47b4c94c073f80`;
+          
+          setMapData({
+            url: mapUrl,
+            members: membersWithLocations
+          });
+        } else {
+          // Show default map when no members have locations
+          setMapData({
+            url: null,
+            members: []
+          });
+        }
+      } else {
+        // Show default map when no members
         setMapData({
-          url: mapUrl,
-          members: members
+          url: null,
+          members: []
         });
       }
     } catch (err) {
       setError('Failed to create map');
       console.error('Error creating map:', err);
+      // Set mapData to null to show the fallback UI
+      setMapData(null);
     }
   };
 
@@ -133,7 +153,7 @@ const GroupMap: React.FC<GroupMapProps> = ({ groupId, groupData }) => {
         <p className="mt-1 text-sm text-gray-500">Real-time location of group members</p>
       </div>
       
-      {mapData ? (
+      {mapData && mapData.url ? (
         <div className="relative">
           <img 
             src={mapData.url} 
@@ -155,7 +175,13 @@ const GroupMap: React.FC<GroupMapProps> = ({ groupId, groupData }) => {
         </div>
       ) : (
         <div className="h-96 flex items-center justify-center bg-gray-100">
-          <p className="text-gray-500">No location data available</p>
+          <div className="text-center">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+            </svg>
+            <p className="mt-2 text-gray-500">Map will appear when members share their locations</p>
+            <p className="text-sm text-gray-400 mt-1">Start location tracking to see the map</p>
+          </div>
         </div>
       )}
       
@@ -173,7 +199,7 @@ const GroupMap: React.FC<GroupMapProps> = ({ groupId, groupData }) => {
             <li key={member._id} className="flex items-center text-sm text-gray-600">
               <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
               <span>{member.name}</span>
-              {member.liveLocation && (
+              {member.liveLocation && member.liveLocation.coordinates && (
                 <span className="ml-2 text-xs text-gray-500">
                   ({member.liveLocation.coordinates[1].toFixed(4)}, {member.liveLocation.coordinates[0].toFixed(4)})
                 </span>

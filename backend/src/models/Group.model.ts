@@ -17,6 +17,7 @@ export interface IGroup extends Document {
       coordinates: [number, number]; // [longitude, latitude]
     };
   };
+  dateTime: Date;
   seatCount: number;
   status: 'Open' | 'Locked' | 'Completed';
   chatRoomId: string;
@@ -68,6 +69,10 @@ const GroupSchema: Schema = new Schema({
         index: '2dsphere'
       }
     }
+  },
+  dateTime: {
+    type: Date,
+    required: true
   },
   seatCount: {
     type: Number,

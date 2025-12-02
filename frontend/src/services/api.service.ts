@@ -79,6 +79,7 @@ export const groupAPI = {
   join: (id: string) => api.post(`/api/group/join/${id}`),
   leave: (id: string) => api.post(`/api/group/leave/${id}`),
   lock: (id: string) => api.patch(`/api/group/lock/${id}`),
+  match: (data: any) => api.post('/api/group/match', data),
 };
 
 // Chat APIs
