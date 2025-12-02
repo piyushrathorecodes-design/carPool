@@ -51,8 +51,17 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false // Disable for better compatibility
 }));
 
-// CORS configuration from config
-app.use(cors(config.security.cors));
+// FIXED: TypeScript-compliant CORS configuration
+const corsOptions = {
+  origin: config.security.cors.origin,
+  credentials: config.security.cors.credentials,
+  methods: config.security.cors.methods,
+  allowedHeaders: config.security.cors.allowedHeaders,
+  exposedHeaders: config.security.cors.exposedHeaders,
+  optionsSuccessStatus: config.security.cors.optionsSuccessStatus
+};
+
+app.use(cors(corsOptions));
 
 // Additional CORS headers for better compatibility
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -66,7 +75,19 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Access-Control-Allow-Origin', origin);
   } else if (origin && typeof allowedOrigins === 'function') {
     // Handle function-based CORS
-    res.setHeader('Access-Control-Allow-Origin', origin);
+    const allowed = (allowedOrigin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      if (allowedOrigin && allowedOrigins === origin) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    };
+    
+    allowed(origin, (err, allow) => {
+      if (allow) {
+        res.setHeader('Access-Control-Allow-Origin', origin || '');
+      }
+    });
   }
   
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -85,10 +106,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// MongoDB connection using config
+// MongoDB connection - FIXED: Remove deprecated options
 const connectDB = async (): Promise<void> => {
   try {
-    await mongoose.connect(config.mongodb.uri, config.mongodb.options);
+    // Remove deprecated options for newer Mongoose versions
+    await mongoose.connect(config.mongodb.uri);
     console.log('✅ Connected to MongoDB');
     if (mongoose.connection.db) {
       console.log(`📊 Database: ${mongoose.connection.db.databaseName}`);

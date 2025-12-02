@@ -12,11 +12,8 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 export const developmentConfig = {
   // MongoDB configuration
   mongodb: {
-    uri: process.env.MONGODB_URI || 'mongodb+srv://piyushrathore:piyushcodes@cluster0.wiqfcjk.mongodb.net/carpoolgrp?retryWrites=true&w=majority&appName=Cluster0',
-    options: {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    }
+    uri: process.env.MONGODB_URI || 'mongodb+srv://piyushrathore:piyushcodes@cluster0.wiqfcjk.mongodb.net/carpoolgrp?retryWrites=true&w=majority&appName=Cluster0'
+    // Removed deprecated options for newer Mongoose versions
   },
   
   // Security settings
