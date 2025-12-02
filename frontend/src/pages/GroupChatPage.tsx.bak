@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { 
+  sendGroupMessage, 
+  getGroupMessages, 
+  subscribeToGroupMessages 
+} from '../services/firebase-chat.service';
 import { useAuth } from '../contexts/AuthContext';
-import { chatAPI } from '../services/api.service';
 
 interface Message {
   id: string;

@@ -1,7 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import type { ReactNode } from 'react';
-import { signInWithGoogle, signOutFirebase } from '../services/firebase.service';
 import { authAPI } from '../services/api.service';
 
 // Set base URL for API requests
@@ -115,38 +114,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setToken(null);
     setUser(null);
     delete axios.defaults.headers.common['Authorization'];
-    signOutFirebase().catch(console.error);
   };
 
   // Google Sign-In function
   const handleGoogleSignIn = async () => {
     try {
-      const firebaseUser = await signInWithGoogle();
-      
-      // Get the ID token from Firebase Auth
-      const idToken = await firebaseUser.getIdToken();
-      
-      if (!idToken) {
-        throw new Error('Failed to get Firebase ID token');
-      }
-      
-      // Send the ID token to our backend for verification
-      const response = await authAPI.firebaseAuth(idToken);
-      
-      const { token, user } = response.data;
-      
-      // Ensure the user object has the correct structure
-      const userData = {
-        id: user._id || user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      };
-      
-      localStorage.setItem('token', token);
-      setToken(token);
-      setUser(userData);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      // Placeholder for Google Sign-In implementation
+      throw new Error('Google Sign-In not implemented');
     } catch (error) {
       console.error('Google sign-in error:', error);
       throw error;

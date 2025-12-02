@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { 
+  sendGroupMessage, 
+  getGroupMessages, 
+  subscribeToGroupMessages 
+} from '../services/firebase-chat.service';
 import { groupAPI } from '../services/api.service';
 import { useAuth } from '../contexts/AuthContext';
 import LocationTracker from '../components/LocationTracker';
 import GroupMap from '../components/GroupMap';
-import { chatAPI } from '../services/api.service';
 
 interface ChatMessage {
   id: string;
@@ -137,20 +141,19 @@ const GroupDetail: React.FC = () => {
         
         setGroup(transformedGroup);
         
-        // Load messages
         if (id) {
           try {
-            const messagesResponse = await chatAPI.getHistory(id);
+            const messagesData = await getGroupMessages(id, 50);
             
-            const transformedMessages = messagesResponse.data.data.map((message: any) => ({
-              id: message._id,
-              user: message.sender?.name || 'Unknown',
-              content: message.content,
-              time: new Date(message.timestamp).toLocaleTimeString([], { 
+            const transformedMessages = messagesData.map((message: any) => ({
+              id: message.id,
+              user: message.senderName || message.senderId,
+              content: message.text,
+              time: new Date(message.timestamp.seconds * 1000).toLocaleTimeString([], { 
                 hour: '2-digit', 
                 minute: '2-digit' 
               }),
-              senderId: message.sender?._id
+              senderId: message.senderId
             }));
             
             setMessages(transformedMessages);
@@ -180,30 +183,25 @@ const GroupDetail: React.FC = () => {
     
     fetchData();
     
-    // Set up polling for new messages
     if (id) {
-      const interval = setInterval(async () => {
-        try {
-          const messagesResponse = await chatAPI.getHistory(id);
-          
-          const transformedMessages = messagesResponse.data.data.map((message: any) => ({
-            id: message._id,
-            user: message.sender?.name || 'Unknown',
-            content: message.content,
-            time: new Date(message.timestamp).toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            }),
-            senderId: message.sender?._id
-          }));
-          
-          setMessages(transformedMessages);
-        } catch (msgError) {
-          console.error('Error fetching messages:', msgError);
-        }
-      }, 5000); // Poll every 5 seconds
+      const unsubscribe = subscribeToGroupMessages(id, (messagesData) => {
+        const transformedMessages = messagesData.map((message: any) => ({
+          id: message.id,
+          user: message.senderName || message.senderId,
+          content: message.text,
+          time: new Date(message.timestamp.seconds * 1000).toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+          senderId: message.senderId
+        }));
+        
+        setMessages(transformedMessages);
+      });
       
-      return () => clearInterval(interval);
+      return () => {
+        unsubscribe();
+      };
     }
   }, [id, isAuthenticated, navigate, user]);
 
@@ -220,11 +218,7 @@ const GroupDetail: React.FC = () => {
     }
     
     try {
-      await chatAPI.sendMessage({
-        groupId: id,
-        content: newMessage,
-        sender: userId
-      });
+      await sendGroupMessage(id, userId, userName, newMessage);
       setNewMessage('');
     } catch (err: any) {
       console.error('Error sending message:', err);
