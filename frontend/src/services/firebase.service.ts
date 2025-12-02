@@ -46,6 +46,6 @@ export const signOutFirebase = async () => {
 };
 
 // Export auth for use in other components
-export { auth, googleProvider };
+export { auth, googleProvider, app };
 
 export default app;

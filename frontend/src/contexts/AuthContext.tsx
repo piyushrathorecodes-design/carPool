@@ -55,7 +55,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const loadUser = async () => {
     try {
       const res = await axios.get('/api/auth/me');
-      setUser(res.data.data);
+      // Ensure the user object has the correct structure
+      const userData = {
+        id: res.data.data._id || res.data.data.id,
+        name: res.data.data.name,
+        email: res.data.data.email,
+        role: res.data.data.role
+      };
+      setUser(userData);
     } catch (err) {
       console.error('Error loading user:', err);
       logout();
@@ -70,9 +77,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const res = await axios.post('/api/auth/login', { email, password });
       const { token, user } = res.data;
       
+      // Ensure the user object has the correct structure
+      const userData = {
+        id: user._id || user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      };
+      
       localStorage.setItem('token', token);
       setToken(token);
-      setUser(user);
+      setUser(userData);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } catch (err: any) {
       // Provide better error message for unverified emails
@@ -120,9 +135,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       const { token, user } = response.data;
       
+      // Ensure the user object has the correct structure
+      const userData = {
+        id: user._id || user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      };
+      
       localStorage.setItem('token', token);
       setToken(token);
-      setUser(user);
+      setUser(userData);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } catch (error) {
       console.error('Google sign-in error:', error);

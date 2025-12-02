@@ -5,10 +5,7 @@ import axios from 'axios';
 const RidePoolDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({
-    totalGroups: 0,
-    activeRides: 0,
-    savedMoney: 0,
-    co2Saved: 0
+    totalGroups: 0
   });
   const [recentGroups, setRecentGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,10 +23,7 @@ const RidePoolDashboard: React.FC = () => {
       
       // Mock stats data (in a real app, this would come from the backend)
       setStats({
-        totalGroups: groupsResponse.data.data.length,
-        activeRides: Math.floor(Math.random() * 10),
-        savedMoney: Math.floor(Math.random() * 5000),
-        co2Saved: Math.floor(Math.random() * 1000)
+        totalGroups: groupsResponse.data.data.length
       });
       
       // Set recent groups
@@ -66,8 +60,8 @@ const RidePoolDashboard: React.FC = () => {
           <p className="mt-2 text-gray-300">Save money, reduce emissions, and connect with fellow students</p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Stats Cards - Only showing Total Groups */}
+        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
           <div className="ridepool-card p-6 animate-fade-in">
             <div className="flex items-center">
               <div className="p-3 rounded-lg bg-purple-500 bg-opacity-20">
@@ -81,45 +75,29 @@ const RidePoolDashboard: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="ridepool-card p-6 animate-fade-in">
-            <div className="flex items-center">
-              <div className="p-3 rounded-lg bg-blue-500 bg-opacity-20">
-                <svg className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-400">Active Rides</h3>
-                <p className="text-2xl font-bold text-white">{stats.activeRides}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="ridepool-card p-6 animate-fade-in">
-            <div className="flex items-center">
+        {/* Environmental Impact Message */}
+        <div className="ridepool-card p-6 mb-8">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
               <div className="p-3 rounded-lg bg-green-500 bg-opacity-20">
                 <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-400">Saved Money</h3>
-                <p className="text-2xl font-bold text-white">₹{stats.savedMoney}</p>
               </div>
             </div>
-          </div>
-
-          <div className="ridepool-card p-6 animate-fade-in">
-            <div className="flex items-center">
-              <div className="p-3 rounded-lg bg-teal-500 bg-opacity-20">
-                <svg className="h-6 w-6 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.871 4A17.926 17.926 0 003 12c0 2.874.673 5.59 1.871 8m14.13 0a17.926 17.926 0 001.87-8c0-2.874-.673-5.59-1.87-8M9 9h1.246a1 1 0 01.961.725l1.586 5.55a1 1 0 00.961.725H15m1-7h-.08a2 2 0 00-1.519.698L9.6 15.302A2 2 0 018.08 16H8" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-400">CO2 Saved (kg)</h3>
-                <p className="text-2xl font-bold text-white">{stats.co2Saved}</p>
+            <div className="ml-4">
+              <h3 className="text-lg font-bold text-white">Share Rides, Save the Environment</h3>
+              <p className="mt-2 text-gray-300">
+                Every cab share makes a difference. By choosing to ride together, you're reducing carbon emissions, 
+                decreasing traffic congestion, and helping create a cleaner, greener campus for everyone.
+              </p>
+              <div className="mt-4 p-4 bg-gray-800 bg-opacity-50 rounded-lg">
+                <p className="text-sm text-green-400">
+                  <span className="font-bold">Did you know?</span> A single shared cab can reduce CO2 emissions by up to 75% 
+                  compared to individual rides. Keep sharing to make an even bigger impact!
+                </p>
               </div>
             </div>
           </div>
@@ -263,40 +241,6 @@ const RidePoolDashboard: React.FC = () => {
                     <span className="text-xs text-gray-400 ml-2">3 members</span>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Environmental Impact */}
-            <div className="ridepool-card p-6">
-              <h2 className="text-xl font-bold text-white mb-6">Your Impact</h2>
-              <div className="text-center py-4">
-                <div className="relative inline-flex items-center justify-center w-24 h-24">
-                  <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="45" fill="none" stroke="#374151" strokeWidth="8" />
-                    <circle 
-                      cx="50" 
-                      cy="50" 
-                      r="45" 
-                      fill="none" 
-                      stroke="url(#gradient)" 
-                      strokeWidth="8" 
-                      strokeLinecap="round"
-                      strokeDasharray="283"
-                      strokeDashoffset="70"
-                    />
-                    <defs>
-                      <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#8B5CF6" />
-                        <stop offset="100%" stopColor="#0EA5E9" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-bold text-white">75%</span>
-                    <span className="text-xs text-gray-400">Reduced</span>
-                  </div>
-                </div>
-                <p className="mt-4 text-gray-300">You've reduced your carbon footprint by sharing rides</p>
               </div>
             </div>
           </div>

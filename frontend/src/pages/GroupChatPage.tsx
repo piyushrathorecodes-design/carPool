@@ -1,14 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  initializeCometChat, 
-  loginToCometChat, 
-  getMessages, 
-  sendTextMessage,
-  attachMessageListener,
-  removeMessageListener,
-  getLoggedInUser
-} from '../services/cometchat.service';
+  sendGroupMessage, 
+  getGroupMessages, 
+  subscribeToGroupMessages 
+} from '../services/firebase-chat.service';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Message {
@@ -45,11 +41,8 @@ const GroupChatPage: React.FC = () => {
 
       try {
         setLoading(true);
-        await initializeCometChat();
-        
-        // Login to CometChat
-        const loggedInUser = await loginToCometChat(user.id, user.id);
-        setCurrentUser(loggedInUser);
+        // Set current user
+        setCurrentUser(user);
         
         // Load messages
         await loadMessages();
@@ -65,7 +58,7 @@ const GroupChatPage: React.FC = () => {
 
     // Cleanup function
     return () => {
-      removeMessageListener('groupChatListener');
+      // TODO: Implement Firebase chat cleanup
     };
   }, [groupId, user, navigate]);
 
@@ -73,31 +66,23 @@ const GroupChatPage: React.FC = () => {
   useEffect(() => {
     if (!groupId || !user) return;
 
-    const onTextMessageReceived = (message: any) => {
-      // Check if message is for this group
-      if (message.getReceiverType() === 'group' && message.getReceiver().getGuid() === groupId) {
-        const newMsg: Message = {
-          id: message.getId().toString(),
-          text: message.getText(),
-          sender: {
-            uid: message.getSender().getUid(),
-            name: message.getSender().getName() || message.getSender().getUid()
-          },
-          timestamp: message.getSentAt(),
-          type: message.getType()
-        };
+    const unsubscribe = subscribeToGroupMessages(groupId, (messagesData) => {
+      const formattedMessages: Message[] = messagesData.map(message => ({
+        id: message.id || '',
+        text: message.text,
+        sender: {
+          uid: message.senderId,
+          name: message.senderName || message.senderId
+        },
+        timestamp: message.timestamp?.seconds || Date.now() / 1000,
+        type: 'text'
+      }));
 
-        setMessages(prev => [...prev, newMsg]);
-      }
-    };
-
-    attachMessageListener(
-      'groupChatListener',
-      onTextMessageReceived
-    );
+      setMessages(formattedMessages);
+    });
 
     return () => {
-      removeMessageListener('groupChatListener');
+      unsubscribe();
     };
   }, [groupId, user]);
 
@@ -106,28 +91,23 @@ const GroupChatPage: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Load messages from CometChat
+  // Load messages from Firebase
   const loadMessages = async () => {
     if (!groupId) return;
 
     try {
-      const messagesData = await getMessages(groupId, 50, 'group');
+      const messagesData = await getGroupMessages(groupId, 50);
       
-      const formattedMessages: Message[] = messagesData.map(message => {
-        // Cast to TextMessage to access text-specific methods
-        const textMessage = message as any;
-        
-        return {
-          id: message.getId().toString(),
-          text: textMessage.getText(),
-          sender: {
-            uid: message.getSender().getUid(),
-            name: message.getSender().getName() || message.getSender().getUid()
-          },
-          timestamp: message.getSentAt(),
-          type: message.getType()
-        };
-      });
+      const formattedMessages: Message[] = messagesData.map(message => ({
+        id: message.id || '',
+        text: message.text,
+        sender: {
+          uid: message.senderId,
+          name: message.senderName || message.senderId
+        },
+        timestamp: message.timestamp?.seconds || Date.now() / 1000,
+        type: 'text'
+      }));
 
       setMessages(formattedMessages);
       setError(null);
@@ -141,13 +121,25 @@ const GroupChatPage: React.FC = () => {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newMessage.trim() || !groupId) return;
+    if (!newMessage.trim() || !groupId || !user) return;
+    
+    // Additional safety checks
+    // Handle both _id and id properties
+    const userId = (user as any).id || (user as any)._id;
+    const userName = user.name;
+    
+    if (!userId || !userName) {
+      console.error('User ID or name is missing');
+      console.error('User object details:', user);
+      setError('Unable to send message: User information is incomplete.');
+      return;
+    }
     
     try {
       setLoading(true);
       
-      // Send message through CometChat
-      await sendTextMessage(groupId, newMessage, 'group');
+      // Send message through Firebase
+      await sendGroupMessage(groupId, userId, userName, newMessage);
       
       // Clear input
       setNewMessage('');

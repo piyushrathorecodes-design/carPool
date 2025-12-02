@@ -3,13 +3,6 @@ import Group from '../models/Group.model';
 import PoolRequest from '../models/PoolRequest.model';
 import User from '../models/User.model';
 import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
-
-// CometChat configuration
-const COMETCHAT_APP_ID = process.env.COMETCHAT_APP_ID || '1672589608652649c';
-const COMETCHAT_REGION = process.env.COMETCHAT_REGION || 'IN';
-const COMETCHAT_AUTH_KEY = process.env.COMETCHAT_AUTH_KEY || '55ac6259ae517af575daa4121123949779999c8f';
-const COMETCHAT_API_URL = `https://${COMETCHAT_REGION}.cometchat.io/v3`;
 
 // @desc    Create a group
 // @route   POST /api/group/create
@@ -48,49 +41,6 @@ export const createGroup = async (req: any, res: Response): Promise<void> => {
     });
     
     console.log('Group created successfully:', group._id);
-    
-    // Create CometChat group using REST API
-    try {
-      const cometChatGroupData = {
-        guid: chatRoomId,
-        name: groupName,
-        type: 'public',
-        description: description || groupName
-      };
-      
-      console.log('Creating CometChat group with data:', cometChatGroupData);
-      
-      await axios.post(`${COMETCHAT_API_URL}/groups`, cometChatGroupData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'appId': COMETCHAT_APP_ID,
-          'apiKey': COMETCHAT_AUTH_KEY
-        }
-      });
-      
-      console.log('CometChat group created successfully');
-      
-      // Add creator as member of the CometChat group
-      const addUserToGroupData = {
-        guid: chatRoomId,
-        participants: [req.user.id]
-      };
-      
-      console.log('Adding user to CometChat group with data:', addUserToGroupData);
-      
-      await axios.post(`${COMETCHAT_API_URL}/groups/members`, addUserToGroupData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'appId': COMETCHAT_APP_ID,
-          'apiKey': COMETCHAT_AUTH_KEY
-        }
-      });
-      
-      console.log('User added to CometChat group successfully');
-    } catch (cometChatError) {
-      console.error('Error with CometChat integration:', cometChatError);
-      // Don't fail the group creation if CometChat fails
-    }
     
     res.status(201).json({
       success: true,
@@ -170,25 +120,6 @@ export const joinGroup = async (req: any, res: Response): Promise<void> => {
     await group.save();
     
     console.log('User added to group successfully');
-    
-    // Add user to CometChat group
-    try {
-      const addUserToGroupData = {
-        guid: group.chatRoomId,
-        participants: [req.user.id]
-      };
-      
-      await axios.post(`${COMETCHAT_API_URL}/groups/members`, addUserToGroupData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'appId': COMETCHAT_APP_ID,
-          'apiKey': COMETCHAT_AUTH_KEY
-        }
-      });
-    } catch (cometChatError) {
-      console.error('Error adding user to CometChat group:', cometChatError);
-      // Don't fail the join operation if CometChat fails
-    }
     
     res.status(200).json({
       success: true,
