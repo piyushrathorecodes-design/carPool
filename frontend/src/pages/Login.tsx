@@ -173,6 +173,13 @@ const Login: React.FC = () => {
             Sign up
           </Link>
         </div>
+        
+        {/* Promotional message for upcoming features */}
+        <div className="mt-6 p-4 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-lg border border-purple-200">
+          <p className="text-center text-sm text-purple-800">
+            <span className="font-semibold">New feature coming soon:</span> Booking cabs by group will be available soon!
+          </p>
+        </div>
       </div>
     </div>
   );

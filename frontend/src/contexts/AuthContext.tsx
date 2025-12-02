@@ -1,13 +1,8 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import type { ReactNode } from 'react';
-
-// Declare Google types
-declare global {
-  interface Window {
-    google: any;
-  }
-}
+import { auth, googleProvider } from '../services/firebaseConfig';
+import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 
 // Set base URL for API requests
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -44,7 +39,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Set up axios default headers
+  // Set up axios default headers and Firebase auth listener
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     if (storedToken) {
@@ -54,6 +49,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } else {
       setLoading(false);
     }
+    
+    // Listen for Firebase auth state changes
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (!firebaseUser && !storedToken) {
+        // No Firebase user and no stored token, ensure we're logged out
+        setLoading(false);
+      }
+    });
+    
+    // Cleanup subscription
+    return () => unsubscribe();
   }, []);
 
   // Load user data
@@ -115,86 +121,63 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Logout function
-  const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
-    delete axios.defaults.headers.common['Authorization'];
+  const logout = async () => {
+    try {
+      // Sign out from Firebase
+      await signOut(auth);
+    } catch (error) {
+      console.error('Error signing out from Firebase:', error);
+    } finally {
+      // Clear local storage and state
+      localStorage.removeItem('token');
+      setToken(null);
+      setUser(null);
+      delete axios.defaults.headers.common['Authorization'];
+    }
   };
 
   // Google Sign-In function
   const handleGoogleSignIn = async () => {
     try {
-      // Check if we have a Google Client ID
-      const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      // Sign in with Google using Firebase
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
       
-      if (!googleClientId) {
-        throw new Error('Google Sign-In is not configured for this deployment. Please use email/password login instead.');
-      }
+      // Get the ID token from Firebase user
+      const idToken = await user.getIdToken();
       
-      // Create a promise that will resolve when Google Auth is ready
-      const googleAuthReady = new Promise((resolve, reject) => {
-        if (typeof window !== 'undefined' && window.google && window.google.accounts) {
-          resolve(window.google.accounts);
-        } else {
-          // Dynamically load the Google Platform library
-          const script = document.createElement('script');
-          script.src = 'https://accounts.google.com/gsi/client';
-          script.async = true;
-          script.defer = true;
-          script.onload = () => resolve((window as any).google.accounts);
-          script.onerror = () => reject(new Error('Failed to load Google Platform library'));
-          document.head.appendChild(script);
-        }
-      });
+      // Send the token to your backend for verification
+      const res = await axios.post('/api/auth/firebase', { idToken });
       
-      // Wait for Google Auth to be ready
-      const accounts: any = await googleAuthReady;
+      const { token, userData } = res.data;
       
-      // Create a promise for the OAuth flow
-      return new Promise<void>((resolve, reject) => {
-        // Initialize Google Auth client
-        const client = accounts.oauth2.initTokenClient({
-          client_id: googleClientId,
-          scope: 'openid profile email',
-          callback: async (response: any) => {
-            if (response.error) {
-              reject(new Error(response.error_description || response.error));
-              return;
-            }
-            
-            try {
-              // Send the token to your backend for verification
-              const res = await axios.post('/api/auth/google', { 
-                access_token: response.access_token 
-              });
-              
-              const { token, user } = res.data;
-              
-              // Ensure the user object has the correct structure
-              const userData = {
-                id: user._id || user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role
-              };
-              
-              localStorage.setItem('token', token);
-              setToken(token);
-              setUser(userData);
-              axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-              resolve();
-            } catch (err: any) {
-              reject(new Error(err.response?.data?.message || 'Failed to authenticate with Google'));
-            }
-          },
-        });
-        
-        // Request authorization
-        client.requestAccessToken();
-      });
-    } catch (error) {
+      // Ensure the user object has the correct structure
+      const userObject = {
+        id: userData._id || userData.id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role
+      };
+      
+      localStorage.setItem('token', token);
+      setToken(token);
+      setUser(userObject);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } catch (error: any) {
       console.error('Google sign-in error:', error);
+      // Handle Firebase auth errors
+      if (error.code) {
+        switch (error.code) {
+          case 'auth/popup-closed-by-user':
+            throw new Error('Sign in popup was closed. Please try again.');
+          case 'auth/cancelled-popup-request':
+            throw new Error('Sign in was cancelled. Please try again.');
+          case 'auth/network-request-failed':
+            throw new Error('Network error. Please check your connection and try again.');
+          default:
+            throw new Error(`Authentication failed: ${error.message}`);
+        }
+      }
       throw error;
     }
   };
