@@ -59,7 +59,7 @@ app.use(cors({
 }));
 
 // Manual CORS headers for preflight requests
-app.use((req: Request, res: Response, next: NextFunction) => {
+app.use((req: Request, res: Response, next: NextFunction): void => {
   const origin = req.headers.origin;
   
   // Set CORS headers
@@ -82,7 +82,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    res.status(200).end();
+    return; // Explicitly return to satisfy TypeScript
   }
   
   next();
