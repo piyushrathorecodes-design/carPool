@@ -135,11 +135,33 @@ const GroupsPage: React.FC = () => {
       // Join group in backend
       await groupAPI.join(groupId);
       
+      // Reload groups to reflect changes
+      await loadGroups();
+      
       // Navigate to group detail
       navigate(`/group/${groupId}`);
     } catch (err: any) {
       console.error('Error joining group:', err);
-      setError('Failed to join group. Please try again.');
+      const errorMessage = err.response?.data?.message || 'Failed to join group';
+      
+      if (err.response?.status === 400) {
+        if (errorMessage.includes('already a member')) {
+          setError('You are already a member of this group.');
+        } else if (errorMessage.includes('full')) {
+          setError('This group is full. Please try another group.');
+        } else {
+          setError(errorMessage);
+        }
+      } else if (err.response?.status === 404) {
+        setError('Group not found.');
+      } else if (err.response?.status === 401) {
+        setError('You must be logged in to join a group.');
+      } else {
+        setError(`Failed to join group: ${errorMessage}`);
+      }
+      
+      // Clear error after 3 seconds
+      setTimeout(() => setError(null), 3000);
     } finally {
       setJoiningGroupId(null);
     }

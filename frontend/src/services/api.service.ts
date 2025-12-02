@@ -72,7 +72,7 @@ export const poolAPI = {
 
 // Group APIs
 export const groupAPI = {
-  create: (data: any) => api.post('/api/group/create', data),
+  create: (data: any) => api.post('/api/group', data),
   getAll: () => api.get('/api/group'),
   getMyGroups: () => api.get('/api/group/mygroups'),
   getById: (id: string) => api.get(`/api/group/${id}`),

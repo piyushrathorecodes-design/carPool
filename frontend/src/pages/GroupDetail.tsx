@@ -299,7 +299,7 @@ const GroupDetail: React.FC = () => {
                   <div className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                     <dt className="text-sm font-medium text-gray-300">Route</dt>
                     <dd className="mt-1 text-sm text-white sm:mt-0 sm:col-span-2">
-                      {group?.route.pickup} → {group?.route.drop}
+                      {group?.route.pickup.address} → {group?.route.drop.address}
                     </dd>
                   </div>
                   <div className="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -389,7 +389,21 @@ const GroupDetail: React.FC = () => {
                   </button>
                   
                   {group?.status === 'Open' && (
-                    <button className="ridepool-btn ridepool-btn-secondary w-full inline-flex justify-center items-center px-4 py-2 rounded-md text-sm font-medium">
+                    <button 
+                      onClick={async () => {
+                        try {
+                          if (id) {
+                            await groupAPI.lock(id);
+                            // Refresh the page to show updated status
+                            window.location.reload();
+                          }
+                        } catch (err: any) {
+                          console.error('Error locking group:', err);
+                          alert('Failed to lock group. Please try again.');
+                        }
+                      }}
+                      className="ridepool-btn ridepool-btn-secondary w-full inline-flex justify-center items-center px-4 py-2 rounded-md text-sm font-medium"
+                    >
                       <svg className="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                       </svg>
@@ -397,7 +411,23 @@ const GroupDetail: React.FC = () => {
                     </button>
                   )}
                   
-                  <button className="ridepool-btn ridepool-btn-primary w-full inline-flex justify-center items-center px-4 py-2 rounded-md text-sm font-medium">
+                  <button 
+                    onClick={async () => {
+                      if (window.confirm('Are you sure you want to leave this group?')) {
+                        try {
+                          if (id) {
+                            await groupAPI.leave(id);
+                            // Redirect to groups page
+                            navigate('/groups');
+                          }
+                        } catch (err: any) {
+                          console.error('Error leaving group:', err);
+                          alert('Failed to leave group. Please try again.');
+                        }
+                      }
+                    }}
+                    className="ridepool-btn ridepool-btn-primary w-full inline-flex justify-center items-center px-4 py-2 rounded-md text-sm font-medium"
+                  >
                     <svg className="-ml-1 mr-2 h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
