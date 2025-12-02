@@ -163,14 +163,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Send the token to your backend for verification
       const res = await axios.post('/api/auth/firebase', { idToken });
       
+      // Validate response data
+      if (!res.data) {
+        throw new Error('Invalid response from authentication server');
+      }
+      
       const { token, userData } = res.data;
+      
+      // Validate user data
+      if (!userData) {
+        throw new Error('User data not received from authentication server');
+      }
       
       // Ensure the user object has the correct structure
       const userObject = {
-        id: userData._id || userData.id,
-        name: userData.name,
-        email: userData.email,
-        role: userData.role
+        id: userData._id || userData.id || user.uid,
+        name: userData.name || user.displayName,
+        email: userData.email || user.email,
+        role: userData.role || 'user'
       };
       
       localStorage.setItem('token', token);
