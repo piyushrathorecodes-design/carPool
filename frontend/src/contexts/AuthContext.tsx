@@ -149,7 +149,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const handleGoogleSignIn = async () => {
     // Check if Firebase is properly initialized
     if (!auth || !googleProvider) {
-      throw new Error('Google Sign-In is not properly configured. Please contact support.');
+      throw new Error('Google Sign-In is not properly configured. Please use email/password login instead.');
     }
     
     try {
@@ -188,6 +188,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             throw new Error('Sign in was cancelled. Please try again.');
           case 'auth/network-request-failed':
             throw new Error('Network error. Please check your connection and try again.');
+          case 'auth/invalid-api-key':
+            throw new Error('Authentication service is not properly configured. Please use email/password login instead.');
           default:
             throw new Error(`Authentication failed: ${error.message}`);
         }
