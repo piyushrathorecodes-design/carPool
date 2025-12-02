@@ -82,7 +82,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <Router>
-          <div className="min-h-screen bg-white text-gray-900 relative overflow-hidden">
+          <div className="min-h-screen bg-white text-gray-900 relative">
             <BackgroundAnimation />
             <Routes>
               <Route path="/" element={

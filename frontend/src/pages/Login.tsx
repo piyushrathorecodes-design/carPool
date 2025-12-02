@@ -51,7 +51,7 @@ const Login: React.FC = () => {
       <div className="background-blob background-blob-1"></div>
       <div className="background-blob background-blob-2"></div>
       
-      <div className="max-w-md w-full space-y-8 ridepool-card p-8 animate-fade-in">
+      <div className="max-w-md w-full space-y-8 ridepool-card p-8 animate-fade-in relative z-10">
         <div className="text-center">
           <h2 className="mt-6 text-center text-3xl font-extrabold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent animate-gradient-shift">
             Welcome Back
@@ -168,7 +168,7 @@ const Login: React.FC = () => {
           </div>
         </form>
         
-        <div className="text-center text-sm text-gray-700">
+        <div className="text-center text-sm text-gray-700 mt-4">
           Don't have an account?{' '}
           <Link to="/register" className="font-medium text-purple-600 hover:text-purple-500">
             Sign up

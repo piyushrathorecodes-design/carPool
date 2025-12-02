@@ -47,3 +47,21 @@ code {
 .animate-pulse-slow {
   animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Ensure background blobs don't interfere with content */
+.background-blob {
+  z-index: -1;
+}
+
+/* Fix for sr-only elements to ensure they are accessible but visually hidden */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
