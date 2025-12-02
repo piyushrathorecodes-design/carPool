@@ -28,9 +28,10 @@ const GroupMap: React.FC<GroupMapProps> = ({ groupId, groupData }) => {
     } else if (groupData) {
       // Use provided groupData instead of fetching
       const membersWithLocations = groupData.members
+        .filter((member: any) => member && member.user) // Add safety check
         .map((member: any) => ({
-          _id: member.user._id,
-          name: member.user.name,
+          _id: member.user._id || member.user.id || member.userId, // Handle different ID formats
+          name: member.user.name || 'Unknown User',
           liveLocation: member.user.liveLocation
         }))
         .filter((member: GroupMember) => member.liveLocation);
@@ -54,9 +55,10 @@ const GroupMap: React.FC<GroupMapProps> = ({ groupId, groupData }) => {
       // If we already have groupData, use it instead of fetching
       if (groupData) {
         const membersWithLocations = groupData.members
+          .filter((member: any) => member && member.user) // Add safety check
           .map((member: any) => ({
-            _id: member.user._id,
-            name: member.user.name,
+            _id: member.user._id || member.user.id || member.userId, // Handle different ID formats
+            name: member.user.name || 'Unknown User',
             liveLocation: member.user.liveLocation
           }))
           .filter((member: GroupMember) => member.liveLocation);

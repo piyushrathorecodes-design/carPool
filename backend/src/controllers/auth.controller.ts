@@ -4,6 +4,37 @@ import { hashPassword, comparePassword, sendTokenResponse } from '../utils/auth.
 import { sendEmailVerification } from '../utils/email.utils';
 import crypto from 'crypto';
 import { verifyFirebaseIdToken } from '../services/firebase-admin.service';
+import axios from 'axios';
+
+// CometChat configuration
+const COMETCHAT_APP_ID = process.env.COMETCHAT_APP_ID || '1672589608652649c';
+const COMETCHAT_REGION = process.env.COMETCHAT_REGION || 'in';
+const COMETCHAT_AUTH_KEY = process.env.COMETCHAT_AUTH_KEY || '55ac6259ae517af575daa4121123949779999c8f';
+const COMETCHAT_API_URL = `https://${COMETCHAT_REGION}.cometchat.io/v3`;
+
+// Helper function to create CometChat user
+const createCometChatUser = async (userId: string, name: string, email: string) => {
+  try {
+    const userData = {
+      uid: userId,
+      name: name,
+      email: email
+    };
+
+    await axios.post(`${COMETCHAT_API_URL}/users`, userData, {
+      headers: {
+        'Content-Type': 'application/json',
+        'appId': COMETCHAT_APP_ID,
+        'apiKey': COMETCHAT_AUTH_KEY
+      }
+    });
+
+    console.log('CometChat user created successfully:', userId);
+  } catch (error) {
+    console.error('Error creating CometChat user:', error);
+    // Don't fail the registration if CometChat fails
+  }
+};
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -60,6 +91,9 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       emailVerificationExpires,
       isEmailVerified: false
     });
+
+    // Create CometChat user
+    await createCometChatUser(user._id.toString(), user.name, user.email);
 
     // Send verification email
     try {
@@ -130,6 +164,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
+
+    // Create CometChat user if not exists (for legacy users)
+    await createCometChatUser(user._id.toString(), user.name, user.email);
 
     sendTokenResponse(user, 200, res);
   } catch (err: any) {
@@ -269,6 +306,9 @@ export const firebaseAuth = async (req: Request, res: Response): Promise<void> =
       user.emailVerificationExpires = undefined;
       await user.save();
     }
+
+    // Create CometChat user
+    await createCometChatUser(user._id.toString(), user.name, user.email);
 
     // Send token response
     sendTokenResponse(user, 200, res);

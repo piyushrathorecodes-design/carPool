@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   initializeCometChat, 
   loginToCometChat, 
+  createCometChatUser,
   getMessages, 
   sendTextMessage,
   attachMessageListener,
@@ -129,7 +130,17 @@ const GroupDetail: React.FC = () => {
         if (user && !isCometChatInitialized) {
           try {
             await initializeCometChat();
-            await loginToCometChat(user.id, user.id);
+            
+            // First try to create the user (it's OK if they already exist)
+            try {
+              await createCometChatUser(user.id, user.name);
+            } catch (createError) {
+              // User might already exist, which is fine
+              console.log('User might already exist, continuing with login');
+            }
+            
+            // Then login with just the UID
+            await loginToCometChat(user.id);
             isCometChatInitialized = true;
           } catch (chatError) {
             console.log('CometChat initialization/login error:', chatError);
