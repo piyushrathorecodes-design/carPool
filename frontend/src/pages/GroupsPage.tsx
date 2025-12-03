@@ -461,7 +461,7 @@ const GroupsPage: React.FC = () => {
                     
                     {/* Member details with year and branch */}
                     <div className="flex -space-x-2">
-                      {group.members.slice(0, 3).map((member, index) => (
+                      {group.members.slice(0, 3).map((member) => (
                         <div 
                           key={member.user._id} 
                           className="relative group"
