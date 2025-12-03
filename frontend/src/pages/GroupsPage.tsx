@@ -1,7 +1,7 @@
 // Fixed GroupsPage.tsx with working group creation
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { groupAPI } from '../services/api.service';
 import MapInput from '../components/MapInput';
 
@@ -28,6 +28,8 @@ interface Group {
   description?: string;
   dateTime: string;
   createdAt: string;
+  isMember?: boolean;
+  canJoin?: boolean;
 }
 
 const GroupsPage: React.FC = () => {
@@ -51,6 +53,47 @@ const GroupsPage: React.FC = () => {
   const [creatingGroup, setCreatingGroup] = useState(false);
   
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Handle incoming data from FindPool page
+  useEffect(() => {
+    const state: any = location.state;
+    if (state && state.fromFindPool) {
+      setShowCreateForm(true);
+      
+      // Pre-fill form data if available
+      if (state.formData) {
+        const { pickup, drop } = state.formData;
+        setPickupAddress(pickup);
+        setDropAddress(drop);
+      }
+      
+      // Pre-fill search data if available
+      if (state.searchData) {
+        const { pickupLocation, dropLocation } = state.searchData;
+        if (pickupLocation && pickupLocation.coordinates) {
+          setPickupCoordinates(pickupLocation.coordinates);
+        }
+        if (dropLocation && dropLocation.coordinates) {
+          setDropCoordinates(dropLocation.coordinates);
+        }
+        
+        // Set date and time if available
+        if (state.searchData.dateTime) {
+          const dateTime = new Date(state.searchData.dateTime);
+          setGroupDate(dateTime.toISOString().split('T')[0]);
+          setGroupTime(
+            dateTime.getHours().toString().padStart(2, '0') + 
+            ':' + 
+            dateTime.getMinutes().toString().padStart(2, '0')
+          );
+        }
+      }
+      
+      // Clear the location state
+      window.history.replaceState({}, document.title, location.pathname);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     loadGroups();
@@ -489,16 +532,24 @@ const GroupsPage: React.FC = () => {
                     </div>
                     
                     {viewMode === 'all' && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleJoinGroup(group._id);
-                        }}
-                        disabled={joiningGroupId === group._id || group.status !== 'Open'}
-                        className="ridepool-btn ridepool-btn-primary text-sm px-4 py-2"
-                      >
-                        {joiningGroupId === group._id ? 'Joining...' : 'Join'}
-                      </button>
+                      group.isMember ? (
+                        <span className="text-sm text-green-600 font-medium">Member</span>
+                      ) : group.canJoin ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleJoinGroup(group._id);
+                          }}
+                          disabled={joiningGroupId === group._id}
+                          className="ridepool-btn ridepool-btn-primary text-sm px-4 py-2"
+                        >
+                          {joiningGroupId === group._id ? 'Joining...' : 'Join'}
+                        </button>
+                      ) : (
+                        <span className="text-sm text-gray-500">
+                          {group.status === 'Locked' ? 'Locked' : 'Full'}
+                        </span>
+                      )
                     )}
                   </div>
                 </div>

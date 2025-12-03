@@ -88,30 +88,17 @@ const FindPool: React.FC = () => {
   // Function to create a new group when no matches are found
   const handleCreateGroup = async () => {
     try {
-      setLoading(true);
-      
-      // First create a pool request
-      await axios.post('/api/pool/create', searchData);
-      
-      // Then create a group with this pool request
-      const groupResponse = await axios.post('/api/group/create', {
-        groupName: `Trip from ${formData.pickup.split(',')[0]} to ${formData.drop.split(',')[0]}`,
-        route: {
-          pickup: searchData.pickupLocation,
-          drop: searchData.dropLocation
-        },
-        seatCount: 4 // Default seat count
+      // Navigate to the group creation page, passing the search data
+      navigate('/groups', { 
+        state: { 
+          fromFindPool: true,
+          searchData: searchData,
+          formData: formData
+        } 
       });
-      
-      const groupId = groupResponse.data.data._id;
-      
-      // Navigate to the newly created group
-      navigate(`/group/${groupId}`);
     } catch (err: any) {
-      console.error('Error creating group:', err);
-      alert('Failed to create group. Please try again.');
-    } finally {
-      setLoading(false);
+      console.error('Error navigating to create group:', err);
+      alert('Failed to navigate to create group page. Please try again.');
     }
   };
 

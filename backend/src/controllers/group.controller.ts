@@ -240,14 +240,31 @@ export const lockGroup = async (req: any, res: Response): Promise<void> => {
 // @access  Private
 export const getAllGroups = async (req: any, res: Response): Promise<void> => {
   try {
-    const groups = await Group.find({
-      status: 'Open'
-    }).populate('members.user', 'name email phone year branch');
+    // Get all groups (both Open and Locked) with member counts
+    const groups = await Group.find()
+      .populate('members.user', 'name email phone year branch');
+    
+    // Add a flag to indicate if user can join each group
+    const groupsWithAccess = groups.map(group => {
+      const isMember = group.members.some(member => 
+        member.user._id.toString() === req.user._id.toString()
+      );
+      
+      const canJoin = group.status === 'Open' && 
+                     !isMember && 
+                     group.members.length < group.seatCount;
+      
+      return {
+        ...group.toObject(),
+        isMember,
+        canJoin
+      };
+    });
     
     res.status(200).json({
       success: true,
-      count: groups.length,
-      data: groups
+      count: groupsWithAccess.length,
+      data: groupsWithAccess
     });
   } catch (err: any) {
     res.status(500).json({
