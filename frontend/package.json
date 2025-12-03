@@ -15,6 +15,7 @@
     "date-fns": "^4.1.0",
     "firebase": "^12.6.0",
     "react": "^19.1.0",
+    "react-copy-to-clipboard": "^5.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.9.6",
     "socket.io-client": "^4.8.1",
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@eslint/js": "^9.25.0",
     "@types/react": "^19.1.2",
+    "@types/react-copy-to-clipboard": "^5.0.7",
     "@types/react-dom": "^19.1.2",
     "@types/react-router-dom": "^5.3.3",
     "@types/socket.io-client": "^1.4.36",
