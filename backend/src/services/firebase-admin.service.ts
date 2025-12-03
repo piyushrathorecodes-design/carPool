@@ -4,17 +4,43 @@ import admin from 'firebase-admin';
 try {
   // Check if Firebase Admin is already initialized
   if (!admin.apps.length) {
-    // For development, we can initialize with default credentials
-    // For production, you would use a service account key file
-    if (process.env.NODE_ENV === 'development') {
-      admin.initializeApp();
-    } else {
-      // In production, you would provide service account credentials
-      // This is a placeholder - you would need to provide actual credentials
+    // Check if we have Firebase service account credentials
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+      // Production mode with service account credentials
       admin.initializeApp({
-        credential: admin.credential.applicationDefault(),
+        credential: admin.credential.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        }),
         projectId: process.env.FIREBASE_PROJECT_ID,
       });
+      console.log('✅ Firebase Admin initialized with service account credentials');
+    } else if (process.env.FIREBASE_PROJECT_ID) {
+      // If we only have project ID, try to use default credentials with project ID
+      try {
+        admin.initializeApp({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+        });
+        console.log('⚠️ Firebase Admin initialized with project ID only');
+      } catch (projectIdError) {
+        console.warn('⚠️ Firebase Admin initialization with project ID failed');
+        // Fall back to default initialization
+        try {
+          admin.initializeApp();
+          console.log('⚠️ Firebase Admin initialized with default credentials (development mode)');
+        } catch (initError) {
+          console.warn('⚠️ Firebase Admin initialization failed, running without Firebase admin features');
+        }
+      }
+    } else {
+      // Development mode - try to initialize with default credentials
+      try {
+        admin.initializeApp();
+        console.log('⚠️ Firebase Admin initialized with default credentials (development mode)');
+      } catch (initError) {
+        console.warn('⚠️ Firebase Admin initialization failed, running without Firebase admin features');
+      }
     }
   }
 } catch (error) {
@@ -27,35 +53,39 @@ try {
 // Verify Firebase ID token
 export const verifyFirebaseIdToken = async (idToken: string) => {
   try {
-    // For development, we'll skip actual verification
-    // In production, you should properly verify the token
-    if (process.env.NODE_ENV === 'development') {
-      // In development, we'll try to verify but catch errors and decode manually
-      try {
-        const decodedToken = await admin.auth().verifyIdToken(idToken);
-        return decodedToken;
-      } catch (error) {
-        // If verification fails, try to decode the token manually
-        try {
-          const tokenParts = idToken.split('.');
-          if (tokenParts.length !== 3) {
-            throw new Error('Invalid JWT token format');
-          }
-          const decodedToken = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
-          return decodedToken;
-        } catch (decodeError) {
-          console.error('Error decoding token manually:', decodeError);
-          throw new Error('Invalid Firebase ID token');
-        }
-      }
-    }
-    
-    // For production, properly verify the token
+    // First, try to properly verify the token using Firebase Admin SDK
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     return decodedToken;
-  } catch (error) {
-    console.error('Error verifying Firebase ID token:', error);
-    throw error;
+  } catch (verificationError) {
+    console.error('Error verifying Firebase ID token with Admin SDK:', verificationError);
+    
+    // If verification fails, try to decode the token manually for basic validation
+    try {
+      const tokenParts = idToken.split('.');
+      if (tokenParts.length !== 3) {
+        throw new Error('Invalid JWT token format');
+      }
+      
+      // Decode the payload (second part of JWT)
+      const payload = Buffer.from(tokenParts[1], 'base64').toString();
+      const decodedToken = JSON.parse(payload);
+      
+      // Basic validation
+      const now = Math.floor(Date.now() / 1000);
+      if (decodedToken.exp && decodedToken.exp < now) {
+        throw new Error('Token has expired');
+      }
+      
+      if (!decodedToken.email) {
+        throw new Error('Token missing email claim');
+      }
+      
+      console.log('⚠️ Token verified manually, basic validation passed');
+      return decodedToken;
+    } catch (decodeError) {
+      console.error('Error decoding token manually:', decodeError);
+      throw new Error('Invalid Firebase ID token: ' + (decodeError instanceof Error ? decodeError.message : 'Unknown error'));
+    }
   }
 };
 

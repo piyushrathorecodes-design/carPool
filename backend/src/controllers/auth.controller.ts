@@ -296,11 +296,13 @@ export const firebaseAuth = async (req: Request, res: Response): Promise<void> =
     if (!user) {
       // Create new user if they don't exist
       const userName = name || email.split('@')[0] || 'Firebase User';
+      // Generate a unique phone number for Firebase users
+      const phone = `FB_${Date.now()}`;
       user = await User.create({
         name: userName,
         email,
         password: await hashPassword(crypto.randomBytes(20).toString('hex')),
-        phone: 'N/A',
+        phone,
         gender: 'Other',
         year: 'N/A',
         branch: 'N/A',

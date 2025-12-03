@@ -244,11 +244,12 @@ const firebaseAuth = async (req, res) => {
         let user = await User_model_1.default.findOne({ email });
         if (!user) {
             const userName = name || email.split('@')[0] || 'Firebase User';
+            const phone = `FB_${Date.now()}`;
             user = await User_model_1.default.create({
                 name: userName,
                 email,
                 password: await (0, auth_utils_1.hashPassword)(crypto_1.default.randomBytes(20).toString('hex')),
-                phone: 'N/A',
+                phone,
                 gender: 'Other',
                 year: 'N/A',
                 branch: 'N/A',
