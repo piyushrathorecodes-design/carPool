@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { adminAPI } from '../services/api.service';
 
 const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState('users');
@@ -7,50 +8,78 @@ const AdminPanel: React.FC = () => {
   const [poolRequests, setPoolRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [announcement, setAnnouncement] = useState({ title: '', content: '' });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // In a real app, you would fetch this data from your API
-    // For now, we'll use mock data
-    setTimeout(() => {
-      setUsers([
-        { id: 1, name: 'Rahul Sharma', email: 'rahul@college.edu.in', role: 'student', status: 'Active' },
-        { id: 2, name: 'Priya Patel', email: 'priya@college.edu.in', role: 'student', status: 'Active' },
-        { id: 3, name: 'Amit Kumar', email: 'amit@college.edu.in', role: 'student', status: 'Banned' },
-        { id: 4, name: 'Admin User', email: 'admin@college.edu.in', role: 'admin', status: 'Active' }
-      ]);
+    fetchData();
+  }, [activeTab]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
       
-      setGroups([
-        { id: 1, name: 'Main Gate to Academic Block', members: 3, status: 'Open' },
-        { id: 2, name: 'Hostel to Library', members: 2, status: 'Locked' },
-        { id: 3, name: 'Girls Hostel to Canteen', members: 4, status: 'Completed' }
-      ]);
-      
-      setPoolRequests([
-        { id: 1, user: 'Rahul Sharma', pickup: 'Main Gate', drop: 'Academic Block', date: '2023-06-15', status: 'Matched' },
-        { id: 2, user: 'Priya Patel', pickup: 'Hostel', drop: 'Library', date: '2023-06-16', status: 'Open' },
-        { id: 3, user: 'Amit Kumar', pickup: 'Girls Hostel', drop: 'Canteen', date: '2023-06-17', status: 'Completed' }
-      ]);
-      
+      switch (activeTab) {
+        case 'users':
+          const usersResponse = await adminAPI.getAllUsers();
+          setUsers(usersResponse.data.data);
+          break;
+        case 'groups':
+          const groupsResponse = await adminAPI.getAllGroups();
+          setGroups(groupsResponse.data.data);
+          break;
+        case 'pools':
+          const poolsResponse = await adminAPI.getAllPoolRequests();
+          setPoolRequests(poolsResponse.data.data);
+          break;
+        default:
+          break;
+      }
+    } catch (err: any) {
+      console.error('Error fetching data:', err);
+      setError('Failed to fetch data. Please try again.');
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
-
-  const handleBanUser = (userId: number) => {
-    setUsers(users.map(user => 
-      user.id === userId 
-        ? { ...user, status: user.status === 'Active' ? 'Banned' : 'Active' }
-        : user
-    ));
+    }
   };
 
-  const handleDeleteGroup = (groupId: number) => {
-    setGroups(groups.filter(group => group.id !== groupId));
+  const handleBanUser = async (userId: string) => {
+    try {
+      await adminAPI.banUser(userId);
+      // Refresh users data
+      const response = await adminAPI.getAllUsers();
+      setUsers(response.data.data);
+    } catch (err: any) {
+      console.error('Error banning user:', err);
+      setError('Failed to ban/unban user. Please try again.');
+    }
   };
 
-  const handleSendAnnouncement = () => {
-    if (announcement.title && announcement.content) {
-      alert(`Announcement sent!\nTitle: ${announcement.title}\nContent: ${announcement.content}`);
-      setAnnouncement({ title: '', content: '' });
+  const handleDeleteGroup = async (groupId: string) => {
+    try {
+      await adminAPI.deleteGroup(groupId);
+      // Refresh groups data
+      const response = await adminAPI.getAllGroups();
+      setGroups(response.data.data);
+    } catch (err: any) {
+      console.error('Error deleting group:', err);
+      setError('Failed to delete group. Please try again.');
+    }
+  };
+
+  const handleSendAnnouncement = async () => {
+    try {
+      if (announcement.title && announcement.content) {
+        await adminAPI.sendAnnouncement({
+          title: announcement.title,
+          content: announcement.content
+        });
+        alert('Announcement sent successfully!');
+        setAnnouncement({ title: '', content: '' });
+      }
+    } catch (err: any) {
+      console.error('Error sending announcement:', err);
+      setError('Failed to send announcement. Please try again.');
     }
   };
 
@@ -61,6 +90,13 @@ const AdminPanel: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
           <p className="mt-1 text-sm text-gray-500">Manage users, groups, and pool requests</p>
         </div>
+        
+        {/* Error message */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
         
         <div className="bg-white shadow overflow-hidden sm:rounded-lg">
           {/* Tabs */}
@@ -149,7 +185,7 @@ const AdminPanel: React.FC = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {users.map((user) => (
-                            <tr key={user.id}>
+                            <tr key={user._id}>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-gray-900">{user.name}</div>
                               </td>
@@ -162,28 +198,28 @@ const AdminPanel: React.FC = () => {
                                     ? 'bg-purple-100 text-purple-800' 
                                     : 'bg-green-100 text-green-800'
                                 }`}>
-                                  {user.role}
+                                  {user.role || 'student'}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                  user.status === 'Active' 
+                                  user.isEmailVerified 
                                     ? 'bg-green-100 text-green-800' 
                                     : 'bg-red-100 text-red-800'
                                 }`}>
-                                  {user.status}
+                                  {user.isEmailVerified ? 'Active' : 'Banned'}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <button
-                                  onClick={() => handleBanUser(user.id)}
+                                  onClick={() => handleBanUser(user._id)}
                                   className={`${
-                                    user.status === 'Active' 
+                                    user.isEmailVerified 
                                       ? 'text-red-600 hover:text-red-900' 
                                       : 'text-green-600 hover:text-green-900'
                                   }`}
                                 >
-                                  {user.status === 'Active' ? 'Ban' : 'Unban'}
+                                  {user.isEmailVerified ? 'Ban' : 'Unban'}
                                 </button>
                               </td>
                             </tr>
@@ -218,12 +254,15 @@ const AdminPanel: React.FC = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {groups.map((group) => (
-                            <tr key={group.id}>
+                            <tr key={group._id}>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm font-medium text-gray-900">{group.name}</div>
+                                <div className="text-sm font-medium text-gray-900">{group.groupName}</div>
+                                <div className="text-sm text-gray-500">
+                                  {group.route?.pickup?.address?.split(',')[0]} → {group.route?.drop?.address?.split(',')[0]}
+                                </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-500">{group.members} members</div>
+                                <div className="text-sm text-gray-500">{group.members?.length || 0} / {group.seatCount || 0} members</div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -238,7 +277,7 @@ const AdminPanel: React.FC = () => {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <button
-                                  onClick={() => handleDeleteGroup(group.id)}
+                                  onClick={() => handleDeleteGroup(group._id)}
                                   className="text-red-600 hover:text-red-900"
                                 >
                                   Delete
@@ -276,15 +315,20 @@ const AdminPanel: React.FC = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {poolRequests.map((request) => (
-                            <tr key={request.id}>
+                            <tr key={request._id}>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm font-medium text-gray-900">{request.user}</div>
+                                <div className="text-sm font-medium text-gray-900">{request.createdBy?.name || 'Unknown'}</div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-500">{request.pickup} → {request.drop}</div>
+                                <div className="text-sm text-gray-500">
+                                  {request.pickupLocation?.address?.split(',')[0] || 'N/A'} → 
+                                  {request.dropLocation?.address?.split(',')[0] || 'N/A'}
+                                </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-gray-500">{request.date}</div>
+                                <div className="text-sm text-gray-500">
+                                  {request.dateTime ? new Date(request.dateTime).toLocaleDateString() : 'N/A'}
+                                </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -294,7 +338,7 @@ const AdminPanel: React.FC = () => {
                                       ? 'bg-blue-100 text-blue-800' 
                                       : 'bg-gray-100 text-gray-800'
                                 }`}>
-                                  {request.status}
+                                  {request.status || 'Unknown'}
                                 </span>
                               </td>
                             </tr>

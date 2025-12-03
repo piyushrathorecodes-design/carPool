@@ -1,6 +1,7 @@
 // backend/src/controllers/notification.controller.ts
 import { Request, Response } from 'express';
 import Notification from '../models/Notification.model';
+import { io } from '../server';
 
 // @desc    Get user's notifications
 // @route   GET /api/notifications
@@ -158,8 +159,8 @@ export const createNotification = async (data: {
   try {
     const notification = await Notification.create(data);
     
-    // TODO: Emit socket event for real-time notification
-    // io.to(data.recipient).emit('new_notification', notification);
+    // Emit socket event for real-time notification
+    io.to(`user_${data.recipient}`).emit('new_notification', notification);
     
     return notification;
   } catch (err) {

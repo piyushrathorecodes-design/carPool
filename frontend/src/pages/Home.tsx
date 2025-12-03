@@ -113,7 +113,7 @@ const Home: React.FC = () => {
             {/* Feature 1 */}
             <div className="feature-card animate-slideInLeft">
               <div className="feature-icon">
-                🚗
+                👥
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-3">
                 Find Travel Buddies
@@ -152,31 +152,121 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Section */}
-      <div className="relative z-10 py-20 px-4 sm:px-6 lg:px-8">
+      {/* Platform Features Section */}
+      <div className="relative z-10 py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-7xl mx-auto">
-          <div className="ridepool-card p-12 text-center animate-fade-in">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-8">
-              Join Thousands of Happy Riders
+          <div className="text-center mb-16 animate-fade-in">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              Powerful Features for Campus Mobility
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-              <div>
-                <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-500">
-                  1000+
-                </div>
-                <p className="text-gray-700 mt-2 text-lg">Active Users</p>
+            <p className="text-xl text-gray-700 max-w-3xl mx-auto">
+              Everything you need to make campus transportation smarter, cheaper, and more sustainable
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Feature 1 */}
+            <div className="ridepool-card text-center p-8 animate-slideInLeft">
+              <div className="feature-icon mx-auto mb-6">
+                👥
               </div>
-              <div>
-                <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-blue-500">
-                  500+
-                </div>
-                <p className="text-gray-700 mt-2 text-lg">Rides Shared</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                Smart Matching
+              </h3>
+              <p className="text-gray-700 leading-relaxed">
+                Automatically connect with students traveling on similar routes and schedules
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="ridepool-card text-center p-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+              <div className="feature-icon mx-auto mb-6">
+                💬
               </div>
-              <div>
-                <div className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-teal-500">
-                  75%
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                Real-time Chat
+              </h3>
+              <p className="text-gray-700 leading-relaxed">
+                Communicate instantly with group members to coordinate pickup times and locations
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="ridepool-card text-center p-8 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+              <div className="feature-icon mx-auto mb-6">
+                🗺️
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                Route Optimization
+              </h3>
+              <p className="text-gray-700 leading-relaxed">
+                Efficient routing algorithms minimize travel time and distance for all group members
+              </p>
+            </div>
+
+            {/* Feature 4 */}
+            <div className="ridepool-card text-center p-8 animate-slideInRight" style={{ animationDelay: '0.6s' }}>
+              <div className="feature-icon mx-auto mb-6">
+                📱
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                Mobile Friendly
+              </h3>
+              <p className="text-gray-700 leading-relaxed">
+                Access all features seamlessly on any device with our responsive design
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Feature 5 */}
+            <div className="ridepool-card p-8 animate-slideInLeft" style={{ animationDelay: '0.8s' }}>
+              <div className="flex items-start">
+                <div className="feature-icon flex-shrink-0">
+                  🔐
                 </div>
-                <p className="text-gray-700 mt-2 text-lg">Cost Savings</p>
+                <div className="ml-6">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                    Safe & Secure
+                  </h3>
+                  <p className="text-gray-700 leading-relaxed">
+                    Verified student profiles, secure messaging, and emergency contact features
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="ridepool-card p-8 animate-fade-in" style={{ animationDelay: '1s' }}>
+              <div className="flex items-start">
+                <div className="feature-icon flex-shrink-0">
+                  🎯
+                </div>
+                <div className="ml-6">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                    Easy Management
+                  </h3>
+                  <p className="text-gray-700 leading-relaxed">
+                    Simple group creation, member management, and ride scheduling tools
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 7 */}
+            <div className="ridepool-card p-8 animate-slideInRight" style={{ animationDelay: '1.2s' }}>
+              <div className="flex items-start">
+                <div className="feature-icon flex-shrink-0">
+                  🚕
+                </div>
+                <div className="ml-6">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                    Direct Booking
+                  </h3>
+                  <p className="text-gray-700 leading-relaxed">
+                    Coming soon: Book cabs directly through our platform with exclusive group discounts
+                  </p>
+                </div>
               </div>
             </div>
           </div>

@@ -17,6 +17,14 @@ export interface IGroup extends Document {
       coordinates: [number, number]; // [longitude, latitude]
     };
   };
+  uberLocations?: {
+    pickup?: {
+      coordinates: [number, number]; // [latitude, longitude]
+    };
+    drop?: {
+      coordinates: [number, number]; // [latitude, longitude]
+    };
+  };
   dateTime: Date;
   seatCount: number;
   status: 'Open' | 'Locked' | 'Completed';
@@ -91,6 +99,20 @@ const GroupSchema: Schema = new Schema({
   description: {
     type: String,
     trim: true
+  },
+  uberLocations: {
+    pickup: {
+      coordinates: {
+        type: [Number],
+        index: '2dsphere'
+      }
+    },
+    drop: {
+      coordinates: {
+        type: [Number],
+        index: '2dsphere'
+      }
+    }
   }
 }, {
   timestamps: true
